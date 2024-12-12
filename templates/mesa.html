@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reportar Resultado - Mesa {{ mesa_id }}</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f9;
+        color: #333;
+      }
+
+      header {
+        text-align: center;
+        padding: 20px;
+        background-color: #4caf50;
+        color: white;
+        font-size: 1.5em;
+      }
+
+      main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+        font-size: 1.8em;
+        color: #4caf50;
+      }
+
+      .buttons-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+      }
+
+      .button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 15px 20px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      .button:hover {
+        background-color: #45a049;
+      }
+
+      .button:active {
+        background-color: #3e8e41;
+      }
+
+      .button.red {
+        background-color: #f44336;
+      }
+
+      .button.red:hover {
+        background-color: #d32f2f;
+      }
+
+      .button.red:active {
+        background-color: #b71c1c;
+      }
+
+      footer {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 0.9em;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Reportar Resultado - Mesa {{ mesa_id }}</header>
+    <main>
+      <h1>Escolha o Resultado</h1>
+      <div class="buttons-container">
+        <button class="button" onclick="report('Vitória Jogador 1')">
+          Vitória Jogador 1
+        </button>
+        <button class="button" onclick="report('Vitória Jogador 2')">
+          Vitória Jogador 2
+        </button>
+        <button class="button red" onclick="report('Empate')">Empate</button>
+        <button class="button red" onclick="report('Derrota dupla')">
+          Derrota dupla
+        </button>
+      </div>
+    </main>
+    <footer>© 2024 Torneio AO VIVO - Powered by Bender & Marco</footer>
+    <script>
+      const mesaId = {{ mesa_id }};
+
+      function report(result) {
+        fetch("/report", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mesa_id: mesaId,
+            resultado: result,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Erro na comunicação com o servidor.");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            alert(data.message || "Resultado reportado com sucesso!");
+          })
+          .catch((error) => {
+            console.error("Erro:", error);
+            alert("Erro ao reportar o resultado. Tente novamente.");
+          });
+      }
+    </script>
+  </body>
+</html>

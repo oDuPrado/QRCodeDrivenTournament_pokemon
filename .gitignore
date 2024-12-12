@@ -1,0 +1,32 @@
+# Python related
+*.pyc
+*.pyo
+__pycache__/
+*.env
+
+# Flask related
+instance/
+.env
+*.db
+
+# Virtual environment
+venv/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# QR code images
+qrcodes/
+
+# IDE configurations
+.vscode/
+.idea/
+*.swp
+
+# Requirements backup
+requirements.txt.bak
+
+# WebSocket temporary files
+*.cache

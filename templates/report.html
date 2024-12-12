@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Relatório de QR Codes</title>
+    <style>
+      body {
+        background: #222;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        margin: 10px;
+      }
+      h1 {
+        text-align: center;
+        color: #4cc9f0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: #333;
+      }
+      th,
+      td {
+        border: 1px solid #444;
+        padding: 8px;
+        text-align: center;
+      }
+      th {
+        background: #555;
+        color: #f72585;
+        text-transform: uppercase;
+      }
+      tbody tr:hover {
+        background: #444;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Relatório de Resultados (QR Codes)</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Mesa</th>
+          <th>Resultado Reportado</th>
+        </tr>
+      </thead>
+      <tbody id="report-body"></tbody>
+    </table>
+
+    <script>
+      let socket;
+      document.addEventListener("DOMContentLoaded", () => {
+        socket = new WebSocket("ws://localhost:8765");
+        socket.onopen = () => console.log("WS no relatório conectado.");
+        socket.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          // Supondo que quando um QR code reporta, recebemos { report: true, table: '3', outcome: 'Vitória de X' }
+          if (data.report) {
+            addReportRow(data.table, data.outcome);
+          }
+        };
+        socket.onerror = (error) => console.log("Erro WS relatório:", error);
+        socket.onclose = () => console.log("WS relatório fechado.");
+      });
+
+      function addReportRow(table, outcome) {
+        const tbody = document.getElementById("report-body");
+        const tr = document.createElement("tr");
+
+        const tdTable = document.createElement("td");
+        tdTable.textContent = table;
+
+        const tdOutcome = document.createElement("td");
+        tdOutcome.textContent = outcome;
+
+        tr.appendChild(tdTable);
+        tr.appendChild(tdOutcome);
+
+        tbody.appendChild(tr);
+      }
+    </script>
+  </body>
+</html>

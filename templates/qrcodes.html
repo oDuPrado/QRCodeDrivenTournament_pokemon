@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QR Codes das Mesas</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        background-color: #f4f4f4;
+      }
+
+      h1 {
+        color: #333;
+        margin: 20px 0;
+        font-size: 1.5em;
+      }
+
+      .qr-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* Define 3 colunas */
+        gap: 20px; /* Espaçamento entre os itens */
+        padding: 20px;
+        width: 100%;
+        max-width: 800px; /* Define largura máxima para caber na folha A4 */
+        background-color: #fff;
+      }
+
+      .qr-card {
+        background: #fff;
+        border: 2px solid #ccc;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 180px; /* Define altura consistente para impressão */
+      }
+
+      .qr-card img {
+        width: 100px;
+        height: 100px;
+        margin-bottom: 10px;
+      }
+
+      .qr-card span {
+        font-size: 1.1em;
+        color: #333;
+        font-weight: bold;
+      }
+
+      @media print {
+        body {
+          background-color: #fff;
+        }
+
+        .qr-container {
+          gap: 10px;
+          margin: 0 auto;
+        }
+
+        .qr-card {
+          box-shadow: none;
+          border: 1px solid #000;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>QR Codes das Mesas</h1>
+    <div class="qr-container" id="qr-container">
+      <!-- Os QR Codes serão inseridos dinamicamente -->
+    </div>
+    <script>
+      // Gerar QR Codes para 10 mesas
+      const qrContainer = document.getElementById("qr-container");
+      const baseUrl = "http://192.168.1.100:5000/mesa";
+
+      for (let i = 1; i <= 10; i++) {
+        const qrCard = document.createElement("div");
+        qrCard.className = "qr-card";
+
+        const img = document.createElement("img");
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${baseUrl}/${i}`;
+        img.alt = `QR Code Mesa ${i}`;
+
+        const span = document.createElement("span");
+        span.textContent = `Mesa ${i}`;
+
+        qrCard.appendChild(img);
+        qrCard.appendChild(span);
+        qrContainer.appendChild(qrCard);
+      }
+    </script>
+  </body>
+</html>

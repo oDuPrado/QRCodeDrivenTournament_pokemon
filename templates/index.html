@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Torneio AO VIVO</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <header>
+      <h1>Torneio AO VIVO</h1>
+    </header>
+
+    <main>
+      <!-- Seção antes de começar -->
+      <section id="setup-section">
+        <div class="center-content">
+          <h2 id="round-info">Rodada Atual: Aguardando</h2>
+          <h3 id="players-count">Número de Jogadores: 0</h3>
+          <p>Parings do Round:</p>
+          <div id="initial-tables-container" class="tables-grid"></div>
+          <br />
+          <div class="buttons-container">
+            <button id="start-btn">Começar</button>
+            <button id="stats-btn">Estatísticas</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Seção do torneio -->
+      <section id="tournament-section" class="hidden">
+        <div class="top-bar">
+          <div class="info-container">
+            <div class="round-info">
+              <span id="current-round">Rodada: -</span>
+            </div>
+            <div class="players-info">
+              <span id="current-players">Jogadores: 0</span>
+            </div>
+            <div class="timer-container">
+              <span>Tempo Restante:</span>
+              <span id="countdown-timer">30:00</span>
+            </div>
+          </div>
+          <button id="next-round-btn">Próxima Rodada</button>
+        </div>
+        <div id="turnos-section" class="hidden">
+          <h2 class="turnos-title">3 Turnos</h2>
+        </div>
+        <div id="tables-container" class="tables-grid"></div>
+      </section>
+
+      <!-- Seção das estatísticas (nova tela) -->
+      <section id="scoreboard-section" class="hidden">
+        <h2>Estatísticas dos Jogadores</h2>
+        <table id="scoreboard">
+          <thead>
+            <tr>
+              <th>Jogador</th>
+              <th>Vitórias</th>
+              <th>Empates</th>
+              <th>Derrotas</th>
+              <th>Histórico</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <br />
+        <button id="back-to-setup-btn">Voltar</button>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2024 Torneio AO VIVO - Powered by Bender & Marco</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>
