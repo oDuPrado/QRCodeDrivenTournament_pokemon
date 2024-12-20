@@ -1,4 +1,4 @@
-let totalTime = 1800; // 30 minutos em segundos
+let totalTime = 1800;
 let countdownInterval = null;
 let lastData = null;
 let roundStartTime = null;
@@ -8,13 +8,14 @@ let tournamentEnded = false;
 let playingInterval = null;
 let playerStats = {};
 let processedMatches = {};
+let initialLoad = true;
 
 const setupSection = document.getElementById("setup-section");
 const tournamentSection = document.getElementById("tournament-section");
 const scoreboardSection = document.getElementById("scoreboard-section");
-
+const alarmSound = new Audio("static/alarm.mp3");
+const INITIAL_TIME = 1800;
 const startBtn = document.getElementById("start-btn");
-const nextRoundBtn = document.getElementById("next-round-btn");
 const statsBtn = document.getElementById("stats-btn");
 const backToSetupBtn = document.getElementById("back-to-setup-btn");
 
@@ -30,41 +31,45 @@ const roundInfoTitle = document.getElementById("round-info");
 const playersCountInfo = document.getElementById("players-count");
 const scoreboardBody = document.querySelector("#scoreboard tbody");
 
-const socket = new WebSocket("ws://localhost:8765");
-socket.onopen = () => console.log("Conexão estabelecida com o WebSocket.");
-socket.onmessage = (event) => handleWebSocketMessage(event.data);
-socket.onerror = (error) => console.log("Erro no WebSocket:", error);
-socket.onclose = () => console.log("Conexão encerrada.");
+document.addEventListener("DOMContentLoaded", () => {
+  fetchDataAndRender();
+  setInterval(fetchDataAndRender, 5000); // Polling a cada 5s
+});
 
-startBtn.addEventListener("click", startTournament);
-nextRoundBtn.addEventListener("click", resetTournament);
-statsBtn.addEventListener("click", showStatistics);
-backToSetupBtn.addEventListener("click", backToSetup);
-
-function handleWebSocketMessage(dataStr) {
-  try {
-    const data = JSON.parse(dataStr);
-    lastData = data;
-    if (!tournamentStarted) {
-      updateInitialView(data);
-    } else if (!tournamentEnded) {
-      updateTournamentView(data);
-    }
-  } catch (e) {
-    console.error("Erro ao processar mensagem do WebSocket:", e);
+startBtn?.addEventListener("click", () => {
+  // Ao clicar em "Começar"
+  if (!tournamentStarted && lastData) {
+    startTournament();
   }
+});
+
+function fetchDataAndRender() {
+  fetch("/get-data")
+    .then((r) => r.json())
+    .then((data) => {
+      lastData = data;
+      if (tournamentStarted) {
+        updateTournamentView(lastData);
+      } else {
+        updateInitialView(lastData);
+      }
+    })
+    .catch((err) => console.error("Erro ao obter dados:", err));
 }
 
 function startTournament() {
   if (!lastData) return;
   tournamentStarted = true;
-  setupSection.classList.add("hidden");
-  scoreboardSection.classList.add("hidden");
-  tournamentSection.classList.remove("hidden");
+  setupSection?.classList.add("hidden");
+  scoreboardSection?.classList.add("hidden");
+  tournamentSection?.classList.remove("hidden");
   roundStartTime = Date.now();
   startCountdown();
   startPlayingInterval();
   updateTournamentView(lastData);
+
+  // Ao iniciar o torneio, abrimos o report.html em nova janela
+  window.open("report.html", "Relatorio", "width=600,height=400");
 }
 
 function resetTournament() {
@@ -72,10 +77,10 @@ function resetTournament() {
   tournamentEnded = false;
   totalTime = 1800;
   playingTables = {};
-  turnosSection.classList.add("hidden");
-  tournamentSection.classList.add("hidden");
-  scoreboardSection.classList.add("hidden");
-  setupSection.classList.remove("hidden");
+  turnosSection?.classList.add("hidden");
+  tournamentSection?.classList.add("hidden");
+  scoreboardSection?.classList.add("hidden");
+  setupSection?.classList.remove("hidden");
   initialTablesContainer.innerHTML = "";
   if (countdownInterval) clearInterval(countdownInterval);
   if (playingInterval) clearInterval(playingInterval);
@@ -88,20 +93,19 @@ function resetTournament() {
   if (lastData) {
     updateInitialView(lastData);
   }
-  // Scoreboard só é atualizado ao clicar em estatísticas agora
 }
 
 function showStatistics() {
-  setupSection.classList.add("hidden");
-  tournamentSection.classList.add("hidden");
-  scoreboardSection.classList.remove("hidden");
+  setupSection?.classList.add("hidden");
+  tournamentSection?.classList.add("hidden");
+  scoreboardSection?.classList.remove("hidden");
   renderScoreboard();
 }
 
 function backToSetup() {
-  scoreboardSection.classList.add("hidden");
-  tournamentSection.classList.add("hidden");
-  setupSection.classList.remove("hidden");
+  scoreboardSection?.classList.add("hidden");
+  tournamentSection?.classList.add("hidden");
+  setupSection?.classList.remove("hidden");
 }
 
 function startCountdown() {
@@ -120,7 +124,7 @@ function startCountdown() {
 }
 
 function updateTimerDisplay() {
-  countdownTimer.textContent = formatTime(totalTime);
+  countdownTimer && (countdownTimer.textContent = formatTime(totalTime));
 }
 
 function startPlayingInterval() {
@@ -132,15 +136,29 @@ function startPlayingInterval() {
 
 function endTournamentPhase() {
   tournamentEnded = true;
-  turnosSection.classList.remove("hidden");
+  alarmSound.play();
+  animateTurnosSection();
+  turnosSection?.classList.remove("hidden");
   if (playingInterval) clearInterval(playingInterval);
   const playingOnly = filterPlayingTables(lastData);
   renderTables(playingOnly, true);
 }
 
+function animateTurnosSection() {
+  turnosSection?.classList.remove("hidden");
+  turnosSection.style.opacity = "0";
+  turnosSection.style.transform = "scale(0.9)";
+  turnosSection.style.transition = "all 0.8s ease-out";
+
+  setTimeout(() => {
+    turnosSection.style.opacity = "1";
+    turnosSection.style.transform = "scale(1)";
+  }, 100);
+}
+
 function endRoundEarly() {
   tournamentEnded = true;
-  turnosSection.classList.add("hidden");
+  turnosSection?.classList.add("hidden");
   if (playingInterval) clearInterval(playingInterval);
   const { tablesData } = extractLatestRoundData(lastData);
   renderTables(tablesData, false);
@@ -149,22 +167,25 @@ function endRoundEarly() {
 function updateInitialView(data) {
   const { tablesData, latestRound } = extractLatestRoundData(data);
   const playerCount = Object.keys(data?.players ?? {}).length;
-  roundInfoTitle.textContent = `Rodada Atual: ${latestRound}`;
-  playersCountInfo.textContent = `Número de Jogadores: ${playerCount}`;
-  renderInitialTables(tablesData);
+  if (roundInfoTitle)
+    roundInfoTitle.textContent = `Rodada Atual: ${latestRound || "Aguardando"}`;
+  if (playersCountInfo)
+    playersCountInfo.textContent = `Número de Jogadores: ${playerCount}`;
+  if (!tablesData || Object.keys(tablesData).length === 0) {
+    initialTablesContainer.innerHTML = "<p>Sem parings no momento</p>";
+  } else {
+    renderInitialTables(tablesData);
+  }
 }
 
 function updateTournamentView(data) {
   if (!data?.round) return;
   const { tablesData, latestRound } = extractLatestRoundData(data);
   const playerCount = Object.keys(data?.players ?? {}).length;
-  updateUIRoundInfo(latestRound, playerCount);
+  if (currentRoundSpan) currentRoundSpan.textContent = `Rodada: ${latestRound}`;
+  if (currentPlayersSpan)
+    currentPlayersSpan.textContent = `Jogadores: ${playerCount}`;
   processAndRenderData(data, tablesData);
-}
-
-function updateUIRoundInfo(latestRound, playerCount) {
-  currentRoundSpan.textContent = `Rodada: ${latestRound}`;
-  currentPlayersSpan.textContent = `Jogadores: ${playerCount}`;
 }
 
 function processAndRenderData(data, tablesData) {
@@ -183,6 +204,7 @@ function extractLatestRoundData(data) {
   if (!data?.round) return { tablesData: {}, latestRound: 0 };
   const rounds = data.round;
   const roundNumbers = Object.keys(rounds).map((r) => parseInt(r, 10));
+  if (!roundNumbers.length) return { tablesData: {}, latestRound: 0 };
   const latestRound = Math.max(...roundNumbers);
   const divisions = rounds[latestRound];
   const divisionKeys = Object.keys(divisions);
@@ -238,43 +260,68 @@ function createTableCard(tableId, tableInfo, showStatus, ended) {
   const card = document.createElement("div");
   card.classList.add("table-card");
 
-  const h2 = document.createElement("h2");
-  h2.textContent = `Mesa ${tableId}`;
-  card.appendChild(h2);
-
-  const playersP = document.createElement("p");
-  playersP.classList.add("players");
-  playersP.textContent = `${player1} vs ${player2}`;
-  card.appendChild(playersP);
+  appendTitle(card, tableId);
+  appendPlayers(card, tableId, player1, player2);
 
   if (tournamentStarted && showStatus) {
-    const statusP = document.createElement("p");
-    statusP.classList.add("status");
-    statusP.textContent = `Status: ${outcome}`;
-    card.appendChild(statusP);
-
-    if (outcome === "Jogando") {
-      ensurePlayingTable(tableId);
-      const elapsedTimeP = document.createElement("p");
-      elapsedTimeP.classList.add("elapsed-time");
-      elapsedTimeP.setAttribute("data-table", tableId);
-      elapsedTimeP.textContent = "Tempo jogado: 00:00";
-      card.appendChild(elapsedTimeP);
+    appendStatus(card, tableId, outcome);
+    if (outcome === "Jogando" && tableId !== "0") {
+      appendElapsedTime(card, tableId);
     } else {
-      if (playingTables[tableId] && !playingTables[tableId].endTime) {
-        playingTables[tableId].endTime = Date.now();
-      }
-      if (playingTables[tableId] && ended) {
-        const duration = calculateMatchDuration(playingTables[tableId]);
-        const durationP = document.createElement("p");
-        durationP.classList.add("elapsed-time");
-        durationP.textContent = `Duração da partida: ${formatTime(duration)}`;
-        card.appendChild(durationP);
-      }
+      appendMatchDuration(card, tableId, ended);
     }
   }
 
   return card;
+}
+
+function appendTitle(card, tableId) {
+  const h2 = document.createElement("h2");
+  h2.textContent = tableId === "0" ? `Mesa BYE` : `Mesa ${tableId}`;
+  card.appendChild(h2);
+}
+
+function appendPlayers(card, tableId, player1, player2) {
+  const playersP = document.createElement("p");
+  playersP.classList.add("players");
+  if (tableId === "0") {
+    playersP.textContent = player1
+      ? `${player1} (BYE - Vitória Automática)`
+      : `Jogador não definido (BYE - Vitória Automática)`;
+  } else {
+    playersP.textContent = `${player1} vs ${player2}`;
+  }
+  card.appendChild(playersP);
+}
+
+function appendStatus(card, tableId, outcome) {
+  const statusP = document.createElement("p");
+  statusP.classList.add("status");
+  statusP.textContent =
+    tableId === "0" ? `Status: Vitória Automática` : `Status: ${outcome}`;
+  card.appendChild(statusP);
+}
+
+function appendElapsedTime(card, tableId) {
+  ensurePlayingTable(tableId);
+  const elapsedTimeP = document.createElement("p");
+  elapsedTimeP.classList.add("elapsed-time");
+  elapsedTimeP.setAttribute("data-table", tableId);
+  elapsedTimeP.textContent = "Tempo jogado: 00:00";
+  card.appendChild(elapsedTimeP);
+}
+
+function appendMatchDuration(card, tableId, ended) {
+  if (playingTables[tableId] && !playingTables[tableId].endTime) {
+    playingTables[tableId].endTime = Date.now();
+  }
+  if (playingTables[tableId] && ended) {
+    const duration = calculateMatchDuration(playingTables[tableId]);
+    const durationP = document.createElement("p");
+    durationP.classList.add("elapsed-time");
+    durationP.textContent = `Duração da partida: ${formatTime(duration)}`;
+    card.appendChild(durationP);
+  }
 }
 
 function ensurePlayingTable(tableId) {
@@ -296,6 +343,7 @@ function updateAllPlayingTimes() {
 function updateElapsedTimeForTable(tableId, element) {
   const tableData = playingTables[tableId];
   if (!tableData?.startTime) return;
+  if (tableData.endTime) return;
   const elapsedSeconds = Math.floor((Date.now() - tableData.startTime) / 1000);
   element.textContent = `Tempo jogado: ${formatTime(elapsedSeconds)}`;
 }
@@ -393,38 +441,28 @@ function initializePlayerIfNeeded(playerName) {
 function renderScoreboard() {
   scoreboardBody.innerHTML = "";
   const statsArray = Object.values(playerStats);
-
   statsArray.sort((a, b) => {
     if (b.wins !== a.wins) return b.wins - a.wins;
     return a.losses - b.losses;
   });
-
   statsArray.forEach((player) => {
     const tr = document.createElement("tr");
-
     const nameTd = document.createElement("td");
     nameTd.textContent = player.name;
-
     const wTd = document.createElement("td");
     wTd.textContent = player.wins;
-
     const dTd = document.createElement("td");
     dTd.textContent = player.draws;
-
     const lTd = document.createElement("td");
     lTd.textContent = player.losses;
-
     const streakTd = document.createElement("td");
     streakTd.textContent = player.outcomes.join(" / ");
-
     tr.appendChild(nameTd);
     tr.appendChild(wTd);
     tr.appendChild(dTd);
     tr.appendChild(lTd);
     tr.appendChild(streakTd);
-
     scoreboardBody.appendChild(tr);
   });
-
-  scoreboardSection.classList.remove("hidden");
+  scoreboardSection?.classList.remove("hidden");
 }

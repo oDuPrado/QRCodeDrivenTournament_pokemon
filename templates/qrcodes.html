@@ -9,88 +9,74 @@
         font-family: Arial, sans-serif;
         margin: 0;
         padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-        background-color: #f4f4f4;
-      }
-
-      h1 {
-        color: #333;
-        margin: 20px 0;
-        font-size: 1.5em;
+        background-color: #fff;
       }
 
       .qr-container {
         display: grid;
-        grid-template-columns: repeat(3, 1fr); /* Define 3 colunas */
-        gap: 20px; /* Espaçamento entre os itens */
+        grid-template-columns: repeat(
+          2,
+          1fr
+        ); /* 2 colunas para ocupar o espaço de forma eficiente */
+        gap: 10px;
         padding: 20px;
         width: 100%;
-        max-width: 800px; /* Define largura máxima para caber na folha A4 */
-        background-color: #fff;
+        box-sizing: border-box;
       }
 
       .qr-card {
-        background: #fff;
-        border: 2px solid #ccc;
-        border-radius: 10px;
-        padding: 10px;
+        border: 1px solid #000;
         text-align: center;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 180px; /* Define altura consistente para impressão */
+        height: 300px;
+        page-break-inside: avoid;
       }
 
       .qr-card img {
-        width: 100px;
-        height: 100px;
-        margin-bottom: 10px;
+        width: 180px;
+        height: 180px;
       }
 
       .qr-card span {
-        font-size: 1.1em;
-        color: #333;
+        font-size: 1.5em;
+        margin-top: 10px;
         font-weight: bold;
       }
 
       @media print {
-        body {
-          background-color: #fff;
-        }
-
         .qr-container {
-          gap: 10px;
-          margin: 0 auto;
+          grid-template-columns: repeat(
+            2,
+            1fr
+          ); /* Mantém 2 colunas na impressão */
+          gap: 20px;
         }
 
         .qr-card {
-          box-shadow: none;
           border: 1px solid #000;
+          page-break-inside: avoid;
         }
       }
     </style>
   </head>
   <body>
-    <h1>QR Codes das Mesas</h1>
     <div class="qr-container" id="qr-container">
       <!-- Os QR Codes serão inseridos dinamicamente -->
     </div>
     <script>
       // Gerar QR Codes para 10 mesas
       const qrContainer = document.getElementById("qr-container");
-      const baseUrl = "http://192.168.1.100:5000/mesa";
+      const baseUrl = "https://DuPrado.pythonanywhere.com/mesa";
 
       for (let i = 1; i <= 10; i++) {
         const qrCard = document.createElement("div");
         qrCard.className = "qr-card";
 
         const img = document.createElement("img");
-        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${baseUrl}/${i}`;
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${baseUrl}/${i}`;
         img.alt = `QR Code Mesa ${i}`;
 
         const span = document.createElement("span");

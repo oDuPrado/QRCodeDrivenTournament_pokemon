@@ -2,11 +2,11 @@ import asyncio
 import os
 import qrcode
 import threading
+import requests
 from flask import Flask, render_template, request, jsonify
 from bs4 import BeautifulSoup
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from websocket_server import WebSocketServer
 import json
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -16,6 +16,7 @@ outcome = {
     1: "Vitória Jogador 1",
     2: "Vitória Jogador 2",
     3: "Empate",
+    5: "BY",
     10: "Derrota Dupla",
 }
 
@@ -25,6 +26,13 @@ category = {
     'Master': 2,
 }
 
+# Variáveis globais do main_1
+resultados = {}
+last_processed_data = None
+
+# URL do servidor online (main_2 no PythonAnywhere)
+ONLINE_SERVER_URL = "https://DuPrado.pythonanywhere.com"
+
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -33,16 +41,78 @@ def home():
 def mesa(mesa_id):
     return render_template("mesa.html", mesa_id=mesa_id)
 
+@app.route("/report.html")
+def report_page():
+    return render_template("report.html")
+
+@app.route("/get-resultados", methods=["GET"])
+def get_resultados():
+    return jsonify({"resultados": resultados})
+
+def get_mesa_players(mesa_id):
+    if not last_processed_data:
+        return None, None
+    round_data = last_processed_data.get('round', {})
+    if not round_data:
+        return None, None
+    
+    round_nums = [int(r) for r in round_data.keys()]
+    if not round_nums:
+        return None, None
+    latest_round = max(round_nums)
+    division_data = round_data[str(latest_round)]
+    division_keys = list(division_data.keys())
+    current_division = division_keys[0]
+    tables = division_data[current_division]['table']
+
+    mesa_info = tables.get(str(mesa_id))
+    if not mesa_info:
+        return None, None
+    player1 = mesa_info['player1']
+    player2 = mesa_info['player2']
+    return player1, player2
+
+def convert_outcome(resultado, mesa_id):
+    if resultado.startswith("Vitória Jogador 1"):
+        p1, _ = get_mesa_players(mesa_id)
+        if p1:
+            return f"Vitória de {p1}"
+    elif resultado.startswith("Vitória Jogador 2"):
+        _, p2 = get_mesa_players(mesa_id)
+        if p2:
+            return f"Vitória de {p2}"
+    return resultado
+
 @app.route("/report", methods=["POST"])
 def report():
     data = request.get_json()
     mesa_id = data.get("mesa_id")
     resultado = data.get("resultado")
-    print(f"Resultado da Mesa {mesa_id}: {resultado}")
-    return jsonify({"message": "Resultado recebido com sucesso!"})
+    current = resultados.get(mesa_id, "Jogando")
+    if current != "Jogando" and current != "Nenhum resultado reportado":
+        return jsonify({"message": "Essa mesa já possui um resultado final. Use 'Reporte Incorreto' para alterar."}), 400
+
+    resultado_final = convert_outcome(resultado, mesa_id)
+    resultados[mesa_id] = resultado_final
+    print(f"Resultado da Mesa {mesa_id}: {resultado_final}")
+    return jsonify({"message": f"Resultado da Mesa {mesa_id} foi reportado como '{resultado_final}'"})
+
+@app.route("/clear-report", methods=["POST"])
+def clear_report():
+    data = request.get_json()
+    mesa_id = data.get("mesa_id")
+    if mesa_id in resultados:
+        del resultados[mesa_id]
+    print(f"Reporte da Mesa {mesa_id} foi removido.")
+    return jsonify({"message": f"Reporte da Mesa {mesa_id} foi removido."})
+
+@app.route("/limpar-resultados", methods=["POST"])
+def limpar_resultados():
+    resultados.clear()
+    print("Todos os resultados foram removidos.")
+    return jsonify({"message": "Todos os resultados foram removidos."})
 
 def run_flask():
-    # Roda o Flask no host e porta desejada
     app.run(host="0.0.0.0", port=5000, debug=False)
 
 def generate_qr_codes(base_url, num_mesas):
@@ -65,27 +135,25 @@ def get_latest_tdf(directory):
     return os.path.join(directory, latest_file)
 
 class TDFHandler(FileSystemEventHandler):
-    def __init__(self, directory, websocket_server, loop):
+    def __init__(self, directory):
         self.directory = directory
-        self.websocket_server = websocket_server
-        self.loop = loop
         self.last_sent_data = None
 
-    def on_created(self, event):
+    def handle_tdf_event(self, event, action):
         if event.src_path.endswith(".tdf"):
-            print(f"Novo arquivo criado: {event.src_path}")
+            print(f"Arquivo {action}: {event.src_path}")
             latest_file = get_latest_tdf(self.directory)
             if latest_file:
                 self.process_file(latest_file)
+
+    def on_created(self, event):
+        self.handle_tdf_event(event, "criado")
 
     def on_modified(self, event):
-        if event.src_path.endswith(".tdf"):
-            print(f"Arquivo modificado: {event.src_path}")
-            latest_file = get_latest_tdf(self.directory)
-            if latest_file:
-                self.process_file(latest_file)
+        self.handle_tdf_event(event, "modificado")
 
     def process_file(self, file_path):
+        global last_processed_data
         print(f"Iniciando o processamento do arquivo: {file_path}")
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
@@ -95,13 +163,20 @@ class TDFHandler(FileSystemEventHandler):
 
             my_json = {'players': self.extract_players(soup)}
             my_json['round'] = self.extract_rounds(soup, my_json['players'])
+            last_processed_data = my_json
 
-            data = json.dumps(my_json, indent=4, ensure_ascii=False)
-            print(f"JSON gerado:\n{data}")
-            
-            if data != self.last_sent_data:
-                self.last_sent_data = data
-                asyncio.run_coroutine_threadsafe(self.websocket_server.broadcast(data), self.loop)
+            data_str = json.dumps(my_json, indent=4, ensure_ascii=False)
+            print(f"JSON gerado:\n{data_str}")
+
+            # Após gerar o JSON, enviar para o servidor online no PythonAnywhere
+            try:
+                response = requests.post(f"{ONLINE_SERVER_URL}/update-data", json=my_json)
+                if response.status_code == 200:
+                    print("Dados enviados para o servidor online com sucesso!")
+                else:
+                    print(f"Falha ao enviar dados. Status: {response.status_code}, {response.text}")
+            except Exception as e:
+                print(f"Erro ao enviar dados para o servidor online: {e}")
 
         except Exception as e:
             print(f"Erro ao processar o arquivo: {e}")
@@ -139,12 +214,20 @@ class TDFHandler(FileSystemEventHandler):
             player1_id = match.find("player1")['userid'] if match.find("player1") else "N/A"
             player2_id = match.find("player2")['userid'] if match.find("player2") else "N/A"
             result = match.get('outcome')
-            outcome_value = self.determine_outcome(result, player1_id, player2_id, player_data)
-            placeholder['table'][table_number] = {
-                'player1': player_data.get(player1_id, "N/A"),
-                'player2': player_data.get(player2_id, "N/A"),
-                'outcome': outcome_value
-            }
+            if result == "5":
+                player_id = match.find("player")['userid'] if match.find("player") else "N/A"
+                placeholder['table'][table_number] = {
+                    'player1': player_data.get(player_id, "N/A"),
+                    'player2': "N/A",
+                    'outcome': "Vitória Automática (BYE)"
+                }
+            else:
+                outcome_value = self.determine_outcome(result, player1_id, player2_id, player_data)
+                placeholder['table'][table_number] = {
+                    'player1': player_data.get(player1_id, "N/A"),
+                    'player2': player_data.get(player2_id, "N/A"),
+                    'outcome': outcome_value
+                }
         return placeholder
 
     def determine_outcome(self, result, player1_id, player2_id, player_data):
@@ -161,45 +244,36 @@ class TDFHandler(FileSystemEventHandler):
         else:
             return "Resultado desconhecido"
 
-async def monitor_directory(directory, websocket_server):
-    loop = asyncio.get_running_loop()
-    event_handler = TDFHandler(directory, websocket_server, loop)
+def iniciar_monitoramento(diretorio):
+    event_handler = TDFHandler(diretorio)
     observer = Observer()
-    observer.schedule(event_handler, directory, recursive=False)
-    print(f"Iniciando monitoramento do diretório: {directory}")
+    observer.schedule(event_handler, diretorio, recursive=False)
+    print(f"Iniciando monitoramento do diretório: {diretorio}")
     observer.start()
     try:
         while True:
-            await asyncio.sleep(1)
-    except asyncio.CancelledError:
+            asyncio.run(asyncio.sleep(1))
+    except KeyboardInterrupt:
         observer.stop()
-        observer.join()
+    observer.join()
 
-async def main_async():
-    base_url = "http://172.28.0.239:5000"
+if __name__ == "__main__":
+    # Ajuste base_url para o servidor online do PythonAnywhere para os QRs
+    base_url = "https://DuPrado.pythonanywhere.com"
     num_mesas = 10
     generate_qr_codes(base_url, num_mesas)
+
     tom_data_directory = r"C:\Users\Marco Prado\OneDrive\ONE DRIVE\OneDrive\SISTEMAS\2024\LIGAS\TOM_APP\DATA\TOM_DATA\TOM_DATA"
     if not os.path.exists(tom_data_directory):
         print("Diretório inválido. Encerrando.")
-        return
-    
+        exit()
+
     files = [f for f in os.listdir(tom_data_directory) if f.endswith('.tdf')]
     print(f"Arquivos .tdf encontrados no diretório: {files}")
 
-    from websocket_server import WebSocketServer
-    websocket_server = WebSocketServer()
-    websocket_task = asyncio.create_task(websocket_server.start())
-
-    print("Iniciando sistema de monitoramento e WebSocket...")
-    monitor_task = asyncio.create_task(monitor_directory(tom_data_directory, websocket_server))
-
-    await asyncio.gather(websocket_task, monitor_task)
-
-if __name__ == "__main__":
-    # Inicia o Flask em uma thread separada
+    # Executa o Flask local (opcional, caso queira acessar localmente)
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-    # Executa a lógica assíncrona (websocket, monitoramento)
-    asyncio.run(main_async())
+    # Inicia monitoramento local
+    iniciar_monitoramento(tom_data_directory)

@@ -8,127 +8,102 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
     />
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #f4f4f9;
-        color: #333;
-      }
-
-      header {
-        text-align: center;
-        padding: 20px;
-        background-color: #4caf50;
-        color: white;
-        font-size: 1.5em;
-      }
-
-      main {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 20px;
-      }
-
-      h1 {
-        margin-bottom: 20px;
-        font-size: 1.8em;
-        color: #4caf50;
-      }
-
-      .buttons-container {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 15px;
-      }
-
-      .button {
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        padding: 15px 20px;
-        font-size: 1em;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-      }
-
-      .button:hover {
-        background-color: #45a049;
-      }
-
-      .button:active {
-        background-color: #3e8e41;
-      }
-
-      .button.red {
-        background-color: #f44336;
-      }
-
-      .button.red:hover {
-        background-color: #d32f2f;
-      }
-
-      .button.red:active {
-        background-color: #b71c1c;
-      }
-
-      footer {
-        margin-top: 30px;
-        text-align: center;
-        font-size: 0.9em;
-        color: #888;
-      }
-    </style>
   </head>
   <body>
-    <header>Reportar Resultado - Mesa {{ mesa_id }}</header>
+    <header><h1>Torneio AO VIVO</h1></header>
     <main>
-      <h1>Escolha o Resultado</h1>
-      <div class="buttons-container">
-        <button class="button" onclick="report('Vitória Jogador 1')">
-          Vitória Jogador 1
-        </button>
-        <button class="button" onclick="report('Vitória Jogador 2')">
-          Vitória Jogador 2
-        </button>
-        <button class="button red" onclick="report('Empate')">Empate</button>
-        <button class="button red" onclick="report('Derrota dupla')">
-          Derrota dupla
-        </button>
+      <div class="mesa-container center-content">
+        <h1>Reportar Resultado da Mesa {{ mesa_id }}</h1>
+        <div class="buttons-container">
+          <button class="button" onclick="report('Vitória Jogador 1')">
+            Vitória Jogador 1
+          </button>
+          <button class="button" onclick="report('Vitória Jogador 2')">
+            Vitória Jogador 2
+          </button>
+          <button class="button" onclick="report('Empate')">Empate</button>
+          <button class="button" onclick="report('Derrota dupla')">
+            Derrota dupla
+          </button>
+          <button class="button red" onclick="clearReport()">
+            Reporte Incorreto
+          </button>
+        </div>
+        <div class="resultado-container" id="resultado">
+          Resultado: Nenhum resultado reportado ainda.
+        </div>
       </div>
     </main>
-    <footer>© 2024 Torneio AO VIVO - Powered by Bender & Marco</footer>
+    <footer>
+      <p>© 2024 Torneio AO VIVO - Powered by Bender & Marco</p>
+    </footer>
     <script>
       const mesaId = {{ mesa_id }};
 
       function report(result) {
-        fetch("/report", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            mesa_id: mesaId,
-            resultado: result,
-          }),
+        fetch('/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mesa_id: mesaId, resultado: result })
         })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error("Erro na comunicação com o servidor.");
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message || 'Resultado reportado com sucesso!');
+          if (data.final_outcome) {
+            document.getElementById("resultado").innerText = `Resultado: ${data.final_outcome}`;
+          } else {
+            document.getElementById("resultado").innerText = `Resultado: ${result}`;
+          }
+        })
+        .catch(error => alert('Erro ao reportar. Tente novamente.'));
+      }
+
+      function clearReport() {
+        fetch('/clear-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mesa_id: mesaId })
+        })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message || 'Reporte removido!');
+          document.getElementById("resultado").innerText = "Resultado: Nenhum resultado reportado ainda.";
+        })
+        .catch(error => alert('Erro ao limpar reporte.'));
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Ao carregar a página, faz um fetch para obter os nomes dos jogadores e atualizar os botões
+        fetch('/get-data')
+          .then(r => r.json())
+          .then(data => {
+            const { tablesData } = extractLatestRoundData(data);
+            if (tablesData[mesaId]) {
+              const player1 = tablesData[mesaId].player1;
+              const player2 = tablesData[mesaId].player2;
+
+              // Atualiza o texto dos botões Jogador 1/Jogador 2
+              const btns = document.querySelectorAll('.buttons-container .button');
+              // Botão "Vitória Jogador 1"
+              btns[0].innerText = `Vitória de ${player1}`;
+              // Botão "Vitória Jogador 2"
+              btns[1].innerText = `Vitória de ${player2}`;
             }
-            return response.json();
           })
-          .then((data) => {
-            alert(data.message || "Resultado reportado com sucesso!");
-          })
-          .catch((error) => {
-            console.error("Erro:", error);
-            alert("Erro ao reportar o resultado. Tente novamente.");
-          });
+          .catch(e => console.error("Erro ao obter jogadores:", e));
+      });
+
+      function extractLatestRoundData(data) {
+        if (!data?.round) return { tablesData: {}, latestRound: 0 };
+        const rounds = data.round;
+        const roundNumbers = Object.keys(rounds).map(r => parseInt(r,10));
+        if (!roundNumbers.length) return { tablesData: {}, latestRound: 0 };
+        const latestRound = Math.max(...roundNumbers);
+        const divisions = rounds[latestRound];
+        const divisionKeys = Object.keys(divisions);
+        const currentDivision = divisionKeys[0];
+        const tablesData = divisions[currentDivision]['table'];
+        return { tablesData, latestRound };
       }
     </script>
   </body>

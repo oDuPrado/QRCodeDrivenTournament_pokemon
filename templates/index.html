@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Torneio AO VIVO</title>
+    <title>4Fun Liguinha</title>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
@@ -11,11 +11,9 @@
   </head>
   <body>
     <header>
-      <h1>Torneio AO VIVO</h1>
+      <h1>4Fun liga Semanal</h1>
     </header>
-
     <main>
-      <!-- Seção antes de começar -->
       <section id="setup-section">
         <div class="center-content">
           <h2 id="round-info">Rodada Atual: Aguardando</h2>
@@ -30,7 +28,6 @@
         </div>
       </section>
 
-      <!-- Seção do torneio -->
       <section id="tournament-section" class="hidden">
         <div class="top-bar">
           <div class="info-container">
@@ -45,7 +42,7 @@
               <span id="countdown-timer">30:00</span>
             </div>
           </div>
-          <button id="next-round-btn">Próxima Rodada</button>
+          <!-- Removido o botão "Próxima Rodada" já que não será mais necessário -->
         </div>
         <div id="turnos-section" class="hidden">
           <h2 class="turnos-title">3 Turnos</h2>
@@ -53,7 +50,6 @@
         <div id="tables-container" class="tables-grid"></div>
       </section>
 
-      <!-- Seção das estatísticas (nova tela) -->
       <section id="scoreboard-section" class="hidden">
         <h2>Estatísticas dos Jogadores</h2>
         <table id="scoreboard">
@@ -74,7 +70,7 @@
     </main>
 
     <footer>
-      <p>© 2024 Torneio AO VIVO - Powered by Bender & Marco</p>
+      <p>© 2024 4fun Liga Semanal - Powered 4fun</p>
     </footer>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
