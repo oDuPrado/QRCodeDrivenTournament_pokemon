@@ -8,6 +8,21 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
     />
+    <style>
+      /* Simple styling for donation link */
+      .donation-container {
+        text-align: center;
+        margin-top: 20px;
+      }
+      .donation-container a {
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 10px;
+      }
+      .donation-container a img {
+        vertical-align: middle;
+      }
+    </style>
   </head>
   <body>
     <header>
@@ -26,6 +41,17 @@
             <button id="stats-btn">Estatísticas</button>
           </div>
         </div>
+        <div class="donation-container">
+          <p>Apoie nosso projeto e ajude a mantê-lo!</p>
+          <!-- Donation icon link for PicPay -->
+          <a href="https://picpay.me/marco.macedo10/0.5" target="_blank">
+            <img
+              src="https://img.shields.io/badge/Donate-PicPay-brightgreen?style=plastic&logo=amazonpay&logoColor=white"
+              alt="Donate with PicPay"
+              height="36"
+            />
+          </a>
+        </div>
       </section>
 
       <section id="tournament-section" class="hidden">
@@ -42,7 +68,6 @@
               <span id="countdown-timer">30:00</span>
             </div>
           </div>
-          <!-- Removido o botão "Próxima Rodada" já que não será mais necessário -->
         </div>
         <div id="turnos-section" class="hidden">
           <h2 class="turnos-title">3 Turnos</h2>
