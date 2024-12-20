@@ -10,12 +10,15 @@ Tournament Manager is a live tournament management system designed to facilitate
 
 ## **Features**
 
-- **Real-Time Updates**: WebSocket integration for instant updates during the tournament.
-- **QR Code Support**: Unique QR codes for each table to simplify reporting.
-- **Responsive Design**: Works on both desktop and mobile devices.
-- **Dynamic Rounds**: Manage and report table outcomes for each round.
-- **Statistics Dashboard**: Displays detailed player statistics and match outcomes.
-- **Popup Reports**: Dedicated windows for reviewing results by round.
+1 -Configure the directory containing the tournament's .tdf files.<br>
+
+2- Run <code>main_1</code> locally to monitor changes, generate QR codes for the tables, and create a PDF with players' PINs.<br>
+
+3 - <code>main_2</code> runs on the online server, receiving updates and displaying the data.<br>
+
+4- Provide players with their PIN and ID (printed in the generated PDF) so they can report results on their respective <code>mesa.html</code> pages.<br>
+
+5-With each vote, the system updates the status on <code>report.html</code>, showing finalized tables, pending votes, or divergences, all in real-time (polling every 5 seconds).
 
 ---
 
@@ -30,7 +33,6 @@ Tournament Manager is a live tournament management system designed to facilitate
 ### **Utilities**
 
 - QR Code generation
-- WebSocket for live communication
 - Responsive CSS for optimized design
 
 ---
@@ -67,7 +69,7 @@ python --version
 
 5. Access the app in your browser:
    ```
-   http://<your-ip>:5000
+   https://<your-ip>.pythonanywhere.com
    ```
 
 ---
