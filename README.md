@@ -92,6 +92,12 @@ python --version
 
 ---
 
+Donations
+If you find this project helpful and would like to support further development, consider donating:
+https://picpay.me/marco.macedo10/0.5
+
+---
+
 ## **Contributing**
 
 Contributions are welcome! Follow these steps to contribute:
