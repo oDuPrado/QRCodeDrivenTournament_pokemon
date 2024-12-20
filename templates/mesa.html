@@ -8,21 +8,72 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='style.css') }}"
     />
+    <style>
+      /* Estilização da caixa de PIN */
+      #pin-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      #pin-input {
+        padding: 10px;
+        font-size: 1.2em;
+        text-align: center;
+        width: 200px;
+        border: 2px solid #4cc9f0;
+        border-radius: 5px;
+        background-color: #000;
+        color: #fff;
+        margin-bottom: 15px;
+      }
+
+      #pin-input:focus {
+        outline: none;
+        border-color: #4895ef;
+        box-shadow: 0 0 10px #4895ef;
+      }
+
+      #pin-label {
+        font-size: 1.2em;
+        color: #4cc9f0;
+        margin-bottom: 10px;
+      }
+    </style>
   </head>
   <body>
     <header><h1>Torneio AO VIVO</h1></header>
     <main>
       <div class="mesa-container center-content">
         <h1>Reportar Resultado da Mesa {{ mesa_id }}</h1>
+        <div id="pin-container">
+          <label id="pin-label" for="pin-input">Digite seu PIN:</label>
+          <input type="text" id="pin-input" placeholder="PIN" maxlength="4" />
+        </div>
         <div class="buttons-container">
-          <button class="button" onclick="report('Vitória Jogador 1')">
+          <button
+            class="button"
+            id="btn-jog1"
+            onclick="report('Vitória Jogador 1')"
+          >
             Vitória Jogador 1
           </button>
-          <button class="button" onclick="report('Vitória Jogador 2')">
+          <button
+            class="button"
+            id="btn-jog2"
+            onclick="report('Vitória Jogador 2')"
+          >
             Vitória Jogador 2
           </button>
-          <button class="button" onclick="report('Empate')">Empate</button>
-          <button class="button" onclick="report('Derrota dupla')">
+          <button class="button" id="btn-empate" onclick="report('Empate')">
+            Empate
+          </button>
+          <button
+            class="button"
+            id="btn-derrota"
+            onclick="report('Derrota dupla')"
+          >
             Derrota dupla
           </button>
           <button class="button red" onclick="clearReport()">
@@ -41,10 +92,15 @@
       const mesaId = {{ mesa_id }};
 
       function report(result) {
+        const pin = document.getElementById("pin-input").value.trim();
+        if (!pin) {
+          alert("Informe seu PIN antes de reportar.");
+          return;
+        }
         fetch('/report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mesa_id: mesaId, resultado: result })
+          body: JSON.stringify({ mesa_id: mesaId, resultado: result, pin: pin })
         })
         .then(response => response.json())
         .then(data => {
@@ -52,7 +108,7 @@
           if (data.final_outcome) {
             document.getElementById("resultado").innerText = `Resultado: ${data.final_outcome}`;
           } else {
-            document.getElementById("resultado").innerText = `Resultado: ${result}`;
+            document.getElementById("resultado").innerText = "Voto registrado. Aguarde o outro jogador ou verifique divergência.";
           }
         })
         .catch(error => alert('Erro ao reportar. Tente novamente.'));
@@ -73,7 +129,7 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
-        // Ao carregar a página, faz um fetch para obter os nomes dos jogadores e atualizar os botões
+        // Ao carregar a página, faz um fetch para obter nomes dos jogadores
         fetch('/get-data')
           .then(r => r.json())
           .then(data => {
@@ -82,12 +138,9 @@
               const player1 = tablesData[mesaId].player1;
               const player2 = tablesData[mesaId].player2;
 
-              // Atualiza o texto dos botões Jogador 1/Jogador 2
-              const btns = document.querySelectorAll('.buttons-container .button');
-              // Botão "Vitória Jogador 1"
-              btns[0].innerText = `Vitória de ${player1}`;
-              // Botão "Vitória Jogador 2"
-              btns[1].innerText = `Vitória de ${player2}`;
+              // Atualiza texto dos botões
+              document.getElementById("btn-jog1").innerText = `Vitória de ${player1}`;
+              document.getElementById("btn-jog2").innerText = `Vitória de ${player2}`;
             }
           })
           .catch(e => console.error("Erro ao obter jogadores:", e));

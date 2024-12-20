@@ -8,6 +8,8 @@ from bs4 import BeautifulSoup
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import json
+import random
+from fpdf import FPDF
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -26,11 +28,9 @@ category = {
     'Master': 2,
 }
 
-# Variáveis globais do main_1
 resultados = {}
 last_processed_data = None
 
-# URL do servidor online (main_2 no PythonAnywhere)
 ONLINE_SERVER_URL = "https://DuPrado.pythonanywhere.com"
 
 @app.route("/")
@@ -48,69 +48,6 @@ def report_page():
 @app.route("/get-resultados", methods=["GET"])
 def get_resultados():
     return jsonify({"resultados": resultados})
-
-def get_mesa_players(mesa_id):
-    if not last_processed_data:
-        return None, None
-    round_data = last_processed_data.get('round', {})
-    if not round_data:
-        return None, None
-    
-    round_nums = [int(r) for r in round_data.keys()]
-    if not round_nums:
-        return None, None
-    latest_round = max(round_nums)
-    division_data = round_data[str(latest_round)]
-    division_keys = list(division_data.keys())
-    current_division = division_keys[0]
-    tables = division_data[current_division]['table']
-
-    mesa_info = tables.get(str(mesa_id))
-    if not mesa_info:
-        return None, None
-    player1 = mesa_info['player1']
-    player2 = mesa_info['player2']
-    return player1, player2
-
-def convert_outcome(resultado, mesa_id):
-    if resultado.startswith("Vitória Jogador 1"):
-        p1, _ = get_mesa_players(mesa_id)
-        if p1:
-            return f"Vitória de {p1}"
-    elif resultado.startswith("Vitória Jogador 2"):
-        _, p2 = get_mesa_players(mesa_id)
-        if p2:
-            return f"Vitória de {p2}"
-    return resultado
-
-@app.route("/report", methods=["POST"])
-def report():
-    data = request.get_json()
-    mesa_id = data.get("mesa_id")
-    resultado = data.get("resultado")
-    current = resultados.get(mesa_id, "Jogando")
-    if current != "Jogando" and current != "Nenhum resultado reportado":
-        return jsonify({"message": "Essa mesa já possui um resultado final. Use 'Reporte Incorreto' para alterar."}), 400
-
-    resultado_final = convert_outcome(resultado, mesa_id)
-    resultados[mesa_id] = resultado_final
-    print(f"Resultado da Mesa {mesa_id}: {resultado_final}")
-    return jsonify({"message": f"Resultado da Mesa {mesa_id} foi reportado como '{resultado_final}'"})
-
-@app.route("/clear-report", methods=["POST"])
-def clear_report():
-    data = request.get_json()
-    mesa_id = data.get("mesa_id")
-    if mesa_id in resultados:
-        del resultados[mesa_id]
-    print(f"Reporte da Mesa {mesa_id} foi removido.")
-    return jsonify({"message": f"Reporte da Mesa {mesa_id} foi removido."})
-
-@app.route("/limpar-resultados", methods=["POST"])
-def limpar_resultados():
-    resultados.clear()
-    print("Todos os resultados foram removidos.")
-    return jsonify({"message": "Todos os resultados foram removidos."})
 
 def run_flask():
     app.run(host="0.0.0.0", port=5000, debug=False)
@@ -133,6 +70,34 @@ def get_latest_tdf(directory):
     latest_file = max(tdf_files, key=lambda f: os.path.getmtime(os.path.join(directory, f)))
     print(f"Último arquivo .tdf encontrado: {latest_file}")
     return os.path.join(directory, latest_file)
+
+def load_pins_file(pin_file):
+    if os.path.exists(pin_file):
+        with open(pin_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+def save_pins_file(pin_file, pins):
+    with open(pin_file, 'w', encoding='utf-8') as f:
+        json.dump(pins, f, ensure_ascii=False, indent=4)
+
+def generate_random_pin(digits=4):
+    return f"{random.randint(0,10**digits-1):0{digits}d}"
+
+def print_pins_pdf(pins_dict):
+    # Gera um PDF com a lista de jogadores e seus PINs
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=14)
+    pdf.cell(0,10,"Lista de PINs dos jogadores",ln=1,align='C')
+    pdf.ln(5)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0,10,"Player_ID | Nome do Jogador | PIN", ln=1)
+    pdf.ln(2)
+    for pid,info in pins_dict.items():
+        pdf.cell(0,10,f"{pid} | {info['name']} | {info['pin']}", ln=1)
+    pdf.output("players_pins.pdf")
+    print("PDF com lista de PINs gerado: players_pins.pdf")
 
 class TDFHandler(FileSystemEventHandler):
     def __init__(self, directory):
@@ -163,12 +128,30 @@ class TDFHandler(FileSystemEventHandler):
 
             my_json = {'players': self.extract_players(soup)}
             my_json['round'] = self.extract_rounds(soup, my_json['players'])
+
+            pin_file = "player_pins.json"
+            player_pins_map = load_pins_file(pin_file)
+
+            pins_dict = {}
+
+            for player_id, player_name in my_json['players'].items():
+                if player_id not in player_pins_map:
+                    player_pins_map[player_id] = generate_random_pin(4)
+                # Agora armazenamos nome junto do PIN
+                pins_dict[player_id] = {"pin": player_pins_map[player_id], "name": player_name}
+
+            save_pins_file(pin_file, player_pins_map)
+
+            my_json['pins'] = pins_dict
+
+            # Gera o PDF com a lista de PINs
+            print_pins_pdf(pins_dict)
+
             last_processed_data = my_json
 
             data_str = json.dumps(my_json, indent=4, ensure_ascii=False)
             print(f"JSON gerado:\n{data_str}")
 
-            # Após gerar o JSON, enviar para o servidor online no PythonAnywhere
             try:
                 response = requests.post(f"{ONLINE_SERVER_URL}/update-data", json=my_json)
                 if response.status_code == 200:
@@ -219,14 +202,17 @@ class TDFHandler(FileSystemEventHandler):
                 placeholder['table'][table_number] = {
                     'player1': player_data.get(player_id, "N/A"),
                     'player2': "N/A",
-                    'outcome': "Vitória Automática (BYE)"
+                    'outcome': "Vitória Automática (BYE)",
+                    'player1_id': player_id,
+                    'player2_id': None
                 }
             else:
-                outcome_value = self.determine_outcome(result, player1_id, player2_id, player_data)
                 placeholder['table'][table_number] = {
                     'player1': player_data.get(player1_id, "N/A"),
                     'player2': player_data.get(player2_id, "N/A"),
-                    'outcome': outcome_value
+                    'outcome': self.determine_outcome(result, player1_id, player2_id, player_data),
+                    'player1_id': player1_id,
+                    'player2_id': player2_id
                 }
         return placeholder
 
@@ -258,9 +244,8 @@ def iniciar_monitoramento(diretorio):
     observer.join()
 
 if __name__ == "__main__":
-    # Ajuste base_url para o servidor online do PythonAnywhere para os QRs
     base_url = "https://DuPrado.pythonanywhere.com"
-    num_mesas = 10
+    num_mesas = 25
     generate_qr_codes(base_url, num_mesas)
 
     tom_data_directory = r"C:\Users\Marco Prado\OneDrive\ONE DRIVE\OneDrive\SISTEMAS\2024\LIGAS\TOM_APP\DATA\TOM_DATA\TOM_DATA"
@@ -271,9 +256,7 @@ if __name__ == "__main__":
     files = [f for f in os.listdir(tom_data_directory) if f.endswith('.tdf')]
     print(f"Arquivos .tdf encontrados no diretório: {files}")
 
-    # Executa o Flask local (opcional, caso queira acessar localmente)
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
-    # Inicia monitoramento local
     iniciar_monitoramento(tom_data_directory)

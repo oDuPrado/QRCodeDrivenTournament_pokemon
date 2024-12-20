@@ -4,8 +4,9 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
-current_data = {"players": {}, "round": {}}
+current_data = {"players": {}, "round": {}, "pins": {}}
 resultados = {}
+votes = {}  
 
 @app.route("/")
 def home():
@@ -35,29 +36,110 @@ def update_data():
 
 @app.route("/get-resultados", methods=["GET"])
 def get_resultados():
-    return jsonify({"resultados": resultados})
+    final_info = {}
+    partial_info = {}
+    build_result_info(final_info, partial_info)
+    return jsonify({"final": final_info, "partial": partial_info})
+
+def build_result_info(final_info, partial_info):
+    tables_data = extract_latest_tables(current_data)
+    for mesa_id, data in tables_data.items():
+        str_mesa_id = str(mesa_id)
+        if str_mesa_id in resultados:
+            final_info[str_mesa_id] = resultados[str_mesa_id]
+        else:
+            handle_partial_result(str_mesa_id, data, partial_info)
+
+def handle_partial_result(str_mesa_id, data, partial_info):
+    if str_mesa_id in votes:
+        v = votes[str_mesa_id]
+        player1_id = data.get('player1_id')
+        player2_id = data.get('player2_id')
+
+        p1_vote = v.get(player1_id)
+        p2_vote = v.get(player2_id)
+
+        # Precisamos do nome do jogador. Está em current_data['pins'][player_id]['name']
+        pins_data = current_data.get('pins', {})
+
+        # Função auxiliar para obter o nome a partir do player_id
+        def get_player_name(pid):
+            info = pins_data.get(pid)
+            return info['name'] if info else "Jogador Desconhecido"
+
+        if p1_vote and p2_vote:
+            if p1_vote == p2_vote:
+                resultados[str_mesa_id] = p1_vote
+            else:
+                partial_info[str_mesa_id] = "Votos divergentes"
+        elif p1_vote and not p2_vote:
+            # Falta voto do segundo jogador
+            player2_name = get_player_name(player2_id)
+            partial_info[str_mesa_id] = f"Aguardando voto de {player2_name}"
+        elif p2_vote and not p1_vote:
+            # Falta voto do primeiro jogador
+            player1_name = get_player_name(player1_id)
+            partial_info[str_mesa_id] = f"Aguardando voto de {player1_name}"
+        else:
+            partial_info[str_mesa_id] = "Nenhum voto ainda"
+    else:
+        partial_info[str_mesa_id] = "Nenhum voto ainda"
+
 
 @app.route("/report", methods=["POST"])
 def report():
     data = request.get_json()
     mesa_id = str(data.get("mesa_id"))
     resultado = data.get("resultado", "")
+    pin = data.get("pin")
 
-    # Se já existe um resultado final para esta mesa e não é "Nenhum resultado reportado" nem "Jogando"
-    if mesa_id in resultados and resultados[mesa_id] != "Jogando" and resultados[mesa_id] != "Nenhum resultado reportado":
-        return jsonify({"message": "Essa mesa já possui um resultado final. Use 'Reporte Incorreto' para alterar."}), 400
+    if not pin:
+        return jsonify({"message": "PIN não fornecido."}), 400
+
+    player_id, player_name = find_player_id_by_pin(pin)
+    if player_id is None:
+        return jsonify({"message": "PIN inválido."}), 403
+
+    # Verificar se esse player_id pertence à mesa
+    tables_data = extract_latest_tables(current_data)
+    if mesa_id not in tables_data:
+        return jsonify({"message": "Mesa não encontrada."}), 400
+
+    info = tables_data[mesa_id]
+    player1_id = info.get('player1_id')
+    player2_id = info.get('player2_id')
+
+    # Se o player_id não é player1_id nem player2_id, não pode reportar
+    if player_id not in [player1_id, player2_id]:
+        return jsonify({"message": "Este jogador não pertence a esta mesa."}), 403
 
     resultado_final = convert_outcome_with_names(resultado, mesa_id)
-    resultados[mesa_id] = resultado_final
-    print(f"Resultado da Mesa {mesa_id}: {resultado_final}")
 
-    update_current_data_outcome(mesa_id, resultado_final)
+    if mesa_id not in votes:
+        votes[mesa_id] = {}
 
-    return jsonify({
-        "message": f"Resultado da Mesa {mesa_id} foi reportado como '{resultado_final}'",
-        "final_outcome": resultado_final
-    })
+    votes[mesa_id][player_id] = resultado_final
 
+    p1_vote = votes[mesa_id].get(player1_id)
+    p2_vote = votes[mesa_id].get(player2_id)
+    if p1_vote and p2_vote:
+        if p1_vote == p2_vote:
+            resultados[mesa_id] = p1_vote
+            print(f"Resultado final da Mesa {mesa_id}: {p1_vote}")
+            return jsonify({
+                "message": f"Voto registrado. Resultado final: {p1_vote}",
+                "final_outcome": p1_vote
+            })
+        else:
+            return jsonify({
+                "message": "Voto registrado, mas há divergência entre os jogadores.",
+                "final_outcome": None
+            })
+    else:
+        return jsonify({
+            "message": "Voto registrado, aguardando outro jogador.",
+            "final_outcome": None
+        })
 
 @app.route("/clear-report", methods=["POST"])
 def clear_report():
@@ -65,59 +147,17 @@ def clear_report():
     mesa_id = str(data.get("mesa_id"))
     if mesa_id in resultados:
         del resultados[mesa_id]
+    if mesa_id in votes:
+        del votes[mesa_id]
     print(f"Reporte da Mesa {mesa_id} foi removido.")
     return jsonify({"message": f"Reporte da Mesa {mesa_id} foi removido."})
 
 @app.route("/limpar-resultados", methods=["POST"])
 def limpar_resultados():
     resultados.clear()
-    print("Todos os resultados foram removidos.")
+    votes.clear()
+    print("Todos os resultados e votos foram removidos.")
     return jsonify({"message": "Todos os resultados foram removidos."})
-
-@app.route("/end-round", methods=["POST"])
-def end_round():
-    # Aqui você pode adicionar lógica para encerrar a rodada se necessário.
-    # Por exemplo, limpar resultados, marcar estado da rodada, etc.
-    # Caso não haja lógica, apenas retorna sucesso.
-    print("Rodada finalizada pelo operador.")
-    return jsonify({"message": "Rodada finalizada!"}), 200
-
-
-def convert_outcome_with_names(resultado, mesa_id):
-    if resultado.startswith("Vitória Jogador 1"):
-        player_name = get_player_name_for_position(mesa_id, 1)
-        if player_name:
-            return f"Vitória de {player_name}"
-    elif resultado.startswith("Vitória Jogador 2"):
-        player_name = get_player_name_for_position(mesa_id, 2)
-        if player_name:
-            return f"Vitória de {player_name}"
-    return resultado
-
-def get_player_name_for_position(mesa_id, position):
-    tables_data = extract_latest_tables(current_data)
-    if mesa_id in tables_data:
-        info = tables_data[mesa_id]
-        return info.get('player1' if position == 1 else 'player2', None)
-    return None
-
-def update_current_data_outcome(mesa_id, final_outcome):
-    rounds = current_data.get("round", {})
-    if not rounds:
-        return
-    round_nums = [int(r) for r in rounds.keys()]
-    if not round_nums:
-        return
-    latest_round = max(round_nums)
-    divisions = rounds[str(latest_round)]
-    division_keys = list(divisions.keys())
-    if not division_keys:
-        return
-    current_division = division_keys[0]
-    tablesData = divisions[current_division]['table']
-
-    if mesa_id in tablesData:
-        tablesData[mesa_id]['outcome'] = final_outcome
 
 def extract_latest_tables(data):
     rounds = data.get("round", {})
@@ -130,5 +170,16 @@ def extract_latest_tables(data):
     divisions = rounds[str(latest_round)]
     division_keys = list(divisions.keys())
     current_division = division_keys[0]
-    tablesData = divisions[current_division]['table']
-    return tablesData
+    tables_data = divisions[current_division]['table']
+    return tables_data
+
+def convert_outcome_with_names(resultado, mesa_id):
+    return resultado
+
+def find_player_id_by_pin(pin):
+    # Procura no current_data['pins'] quem tem esse PIN
+    pins = current_data.get('pins', {})
+    for pid, info in pins.items():
+        if info['pin'] == pin:
+            return pid, info['name']
+    return None, None
