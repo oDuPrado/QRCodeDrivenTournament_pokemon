@@ -1,7 +1,9 @@
 /* ====== GLOBAL ====== */
+/* Corpo principal do site, com gradiente de fundo e configuração de fontes. */
 body {
   margin: 0;
   font-family: "Roboto", Arial, sans-serif;
+  /* Gradiente de fundo: substitua as cores por algo mais "Pokémon" se quiser */
   background: linear-gradient(135deg, #1b1b2f 0%, #2b2b44 100%);
   color: #fff;
   display: flex;
@@ -11,6 +13,8 @@ body {
   text-align: center; /* Centraliza textos */
 }
 
+/* ====== HEADER E FOOTER ====== */
+/* Cabeçalho e Rodapé com cor de fundo escuro e texto em rosa */
 header,
 footer {
   background: #0f0f1f;
@@ -19,6 +23,7 @@ footer {
   position: relative;
 }
 
+/* Título principal e texto de rodapé com animação de glow pulsante */
 header h1,
 footer p {
   margin: 0;
@@ -29,6 +34,7 @@ footer p {
   letter-spacing: 1px;
 }
 
+/* Animação do glow no texto do header/footer */
 @keyframes glow {
   0% {
     text-shadow: 0 0 5px #f72585;
@@ -38,6 +44,8 @@ footer p {
   }
 }
 
+/* ====== MAIN ====== */
+/* Área principal do site, com largura máxima e scroll vertical automático */
 main {
   flex: 1;
   padding: 20px;
@@ -46,6 +54,7 @@ main {
   margin: 0 auto; /* Centraliza o conteúdo principal */
 }
 
+/* Centro do conteúdo, usado para algumas seções que ficam no meio da tela */
 .center-content {
   display: flex;
   flex-direction: column;
@@ -56,12 +65,14 @@ main {
   animation: fadeIn 1s forwards;
 }
 
+/* Animação fadeIn para elementos que surgem do transparente ao opaco */
 @keyframes fadeIn {
   to {
     opacity: 1;
   }
 }
 
+/* Textos dentro de center-content, exemplificando. */
 .center-content p {
   color: #fff;
   font-size: 1.5em;
@@ -69,6 +80,7 @@ main {
 }
 
 /* ====== BUTTONS ====== */
+/* Container de botões e estilo geral dos botões */
 .buttons-container {
   margin-top: 20px;
   display: flex;
@@ -77,6 +89,7 @@ main {
   gap: 20px;
 }
 
+/* Botões com bordas arredondadas, cores suaves, e efeitos de hover */
 button,
 .button {
   background: #4cc9f0;
@@ -96,6 +109,7 @@ button:hover,
   transform: scale(1.05);
 }
 
+/* Botão vermelho para ações destrutivas ou de destaque */
 .button.red {
   background: #f72585;
   color: #fff;
@@ -106,11 +120,13 @@ button:hover,
 }
 
 /* ====== HIDDEN CLASSES ====== */
+/* Classe auxiliar para esconder seções */
 .hidden {
   display: none;
 }
 
 /* ====== ANIMATIONS ====== */
+/* fadeInDown para seções que descem com fade suave */
 @keyframes fadeInDown {
   from {
     transform: translateY(-20px);
@@ -123,6 +139,7 @@ button:hover,
 }
 
 /* ====== DONATION CONTAINER ====== */
+/* Seção de doações, centralizada e com espaço */
 .donation-container {
   text-align: center;
   margin-top: 20px;
@@ -137,6 +154,7 @@ button:hover,
 }
 
 /* ====== INDEX / TOURNAMENT SECTION ====== */
+/* Barra de topo com info de rodada e jogadores */
 .top-bar {
   display: flex;
   justify-content: space-between;
@@ -151,18 +169,21 @@ button:hover,
   border-radius: 5px;
 }
 
+/* Container que mostra Round Info, Players Info e Timer */
 .info-container {
   display: flex;
   align-items: center;
   gap: 20px;
 }
 
+/* Texto de round e players */
 .info-container span {
   font-size: 1em;
   font-weight: bold;
   color: #b5179e;
 }
 
+/* Timer com fonte maior */
 .timer-container {
   font-size: 1.5em;
   color: #4cc9f0;
@@ -182,6 +203,7 @@ button:hover,
   color: #4cc9f0;
 }
 
+/* Contêiner das mesas iniciais e das mesas em jogo */
 #tables-container,
 #initial-tables-container {
   display: grid;
@@ -193,6 +215,7 @@ button:hover,
   justify-items: center; /* Centraliza as mesas */
 }
 
+/* Grid principal das mesas */
 .tables-grid {
   grid-template-columns: repeat(3, 1fr);
   max-width: 1000px;
@@ -200,6 +223,7 @@ button:hover,
 }
 
 /* ====== TABLE CARD ====== */
+/* Card individual de cada mesa */
 .table-card {
   background: rgba(40, 40, 78, 0.8);
   border: 2px solid #f72585;
@@ -214,11 +238,13 @@ button:hover,
   max-width: 280px;
 }
 
+/* Efeito de hover */
 .table-card:hover {
   transform: scale(1);
   box-shadow: 0 0 20px #f72585;
 }
 
+/* Título da mesa */
 .table-card h2 {
   margin: 0 0 10px 0;
   font-size: 1.4em;
@@ -228,6 +254,7 @@ button:hover,
   letter-spacing: 1px;
 }
 
+/* Nome dos jogadores na mesa */
 .table-card .players {
   font-size: 1.1em;
   margin-bottom: 10px;
@@ -235,6 +262,7 @@ button:hover,
   font-weight: 500;
 }
 
+/* Status do jogo: Jogando, Vitória, etc */
 .table-card .status {
   font-size: 1em;
   color: #fff;
@@ -242,6 +270,7 @@ button:hover,
   font-weight: bold;
 }
 
+/* Tempo decorrido */
 .elapsed-time {
   font-size: 0.9em;
   color: #fff;
@@ -250,6 +279,7 @@ button:hover,
 }
 
 /* ====== 3 TURNS TITLE ====== */
+/* Título de "3 Turnos" com animação de glow */
 .turnos-title {
   font-size: 2em;
   color: #4cc9f0;
@@ -259,6 +289,7 @@ button:hover,
   text-transform: uppercase;
 }
 
+/* Round Info e Players Info (texto roxo) */
 .round-info,
 .players-info {
   font-size: 1.2em;
@@ -268,6 +299,7 @@ button:hover,
 }
 
 /* ====== SCOREBOARD SECTION ====== */
+/* Seção com scoreboard animada */
 #scoreboard-section {
   width: 100%;
   max-width: 800px;
@@ -287,6 +319,7 @@ button:hover,
   animation: glow 2s infinite alternate;
 }
 
+/* Tabela de estatísticas */
 #scoreboard {
   width: 100%;
   border-collapse: collapse;
@@ -338,6 +371,7 @@ button:hover,
 }
 
 /* ====== MESA PAGE ====== */
+/* Contêiner principal para a página de Mesa */
 .mesa-container {
   display: flex;
   flex-direction: column;
@@ -346,6 +380,7 @@ button:hover,
   margin-top: 40px;
 }
 
+/* Título da página Mesa */
 .mesa-container h1 {
   font-size: 2em;
   color: #f72585;
@@ -354,12 +389,14 @@ button:hover,
   letter-spacing: 1px;
 }
 
+/* Botões para reportar resultado */
 .mesa-container .buttons-container {
   margin-top: 20px;
   gap: 20px;
   flex-wrap: wrap;
 }
 
+/* Resultado final exibido em verde */
 .mesa-container .resultado-container {
   margin-top: 20px;
   font-size: 1.2em;
@@ -367,7 +404,7 @@ button:hover,
   font-weight: bold;
 }
 
-/* PIN Container for Mesa Page */
+/* PIN Container para o Input do PIN */
 #pin-container {
   display: flex;
   flex-direction: column;
@@ -375,6 +412,7 @@ button:hover,
   margin-bottom: 20px;
 }
 
+/* Estilo do Input de PIN */
 #pin-input {
   padding: 10px;
   font-size: 1.2em;
@@ -393,6 +431,7 @@ button:hover,
   box-shadow: 0 0 10px #4895ef;
 }
 
+/* Label acima do PIN */
 #pin-label {
   font-size: 1.2em;
   color: #4cc9f0;
@@ -400,6 +439,7 @@ button:hover,
 }
 
 /* ====== REPORT PAGE TABLE ====== */
+/* Tabela principal para report.html */
 table {
   margin: 0 auto;
   border-collapse: collapse;
@@ -435,7 +475,8 @@ table tr:hover {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Responsividade para telas menores */
+/* ====== RESPONSIVE ====== */
+/* Ajuste de layout para telas menores */
 @media (max-width: 600px) {
   .timer-container {
     font-size: 1.2em;
@@ -467,6 +508,7 @@ table tr:hover {
   }
 }
 
+/* Seção de turnos extra */
 #turnos-section {
   opacity: 0; /* Começa invisível */
   transform: scale(0.9); /* Inicia menor */
