@@ -51,11 +51,11 @@ python --version
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/tournament-manager.git
+   git clone https://github.com/oDuPrado/QRCodeDrivenTournament_pokemon.git
    ```
 2. Navigate to the project directory:
    ```bash
-   cd tournament-manager
+   cd QRCodeDrivenTournament_pokemon
    ```
 3. Install dependencies:
    ```bash
