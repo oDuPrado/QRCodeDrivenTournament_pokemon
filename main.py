@@ -31,7 +31,7 @@ category = {
 resultados = {}
 last_processed_data = None
 
-ONLINE_SERVER_URL = "https://DuPrado.pythonanywhere.com"
+ONLINE_SERVER_URL = "https://youruser.pythonanywhere.com"
 
 @app.route("/")
 def home():
@@ -244,7 +244,7 @@ def iniciar_monitoramento(diretorio):
     observer.join()
 
 if __name__ == "__main__":
-    base_url = "https://DuPrado.pythonanywhere.com"
+    base_url = "https://youruser.pythonanywhere.com"
     num_mesas = 25
     generate_qr_codes(base_url, num_mesas)
 

@@ -32,24 +32,24 @@
         const tabela = document.getElementById("resultados-tabela");
         tabela.innerHTML = "";
 
-        // data = {final: {...}, partial: {...}}
-        // Primeiros finalizados
+        // data = { final: {...}, partial: {...} }
+        // 1) Primeiros finalizados
         for (const [mesa, resultado] of Object.entries(data.final)) {
           const row = document.createElement("tr");
           row.innerHTML = `
-      <td>${mesa}</td>
-      <td>${resultado}</td>
-    `;
+            <td>${mesa}</td>
+            <td>${resultado}</td>
+          `;
           tabela.appendChild(row);
         }
 
-        // Depois parciais
+        // 2) Depois parciais
         for (const [mesa, estado] of Object.entries(data.partial)) {
           const row = document.createElement("tr");
           row.innerHTML = `
-      <td>${mesa}</td>
-      <td>${estado}</td>
-    `;
+            <td>${mesa}</td>
+            <td>${estado}</td>
+          `;
           tabela.appendChild(row);
         }
       }
