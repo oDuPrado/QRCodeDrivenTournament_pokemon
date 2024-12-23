@@ -92,11 +92,22 @@ python --version
 
 ---
 
-Donations
-If you find this project helpful and would like to support further development, consider donating:
-https://picpay.me/marco.macedo10/0.5
+## Donations
+
+<div align="center">
+  <p>If you find this project helpful and would like to support further development, consider donating:</p>
+  <!-- Donation icon link for PicPay -->
+  <a href="https://picpay.me/marco.macedo10/0.5" target="_blank">
+    <img 
+      src="https://img.shields.io/badge/Donate-PicPay-brightgreen?style=plastic&logo=amazonpay&logoColor=white" 
+      alt="Donate with PicPay" 
+      height="36"
+    />
+  </a>
+</div>
 
 ---
+
 
 ## **Contributing**
 
