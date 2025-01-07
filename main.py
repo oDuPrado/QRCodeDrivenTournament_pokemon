@@ -35,7 +35,7 @@ category = {
 resultados = {}
 last_processed_data = None
 
-ONLINE_SERVER_URL = "https://yourserver.pythonanywhere.com"
+ONLINE_SERVER_URL = "https://youruser.pythonanywhere.com"
 
 # ========== Inicializa Firebase Admin =========
 cred = credentials.Certificate("serviceAccountKey.json")  # Ajuste o caminho se necessário
@@ -72,6 +72,7 @@ def generate_qr_codes(base_url, num_mesas):
         print(f"QR Code gerado para Mesa {mesa_id}: {url}")
 
 def get_latest_tdf(directory):
+    """Localiza o arquivo .tdf mais recente no diretório."""
     tdf_files = [f for f in os.listdir(directory) if f.endswith('.tdf')]
     if not tdf_files:
         print("Nenhum arquivo .tdf encontrado no diretório.")
@@ -108,32 +109,38 @@ def print_pins_pdf(pins_dict):
     pdf.output("players_pins.pdf")
     print("PDF com lista de PINs gerado: players_pins.pdf")
 
+
 # =========== Funções para Firebase ============
-def sanitize_filename_as_id(filename: str) -> str:
-    base = os.path.basename(filename)
-    name_no_ext, _ = os.path.splitext(base)
-    sanitized = (name_no_ext.replace(" ", "_")
-                             .replace("#", "-")
-                             .replace(":", "-")
-                             .replace("/", "-"))
-    return sanitized
 
 def upload_players_to_firebase(my_json):
-    players_dict = my_json.get("players", {})
+    """
+    Envia lista de players ao Firestore, incluindo 'birthdate' se disponível,
+    mas sem colocar essa info em 'tournaments'.
+    """
+    players_dict = my_json.get("players", {})  
     pins_dict = my_json.get("pins", {})
 
-    for player_id, fullname in players_dict.items():
-        pin_entry = pins_dict.get(player_id, {})
+    for player_id, p_info in players_dict.items():
+        fullname = p_info.get("fullname", "Jogador Desconhecido")
+        birthdate = p_info.get("birthdate", "")  # data de nascimento
         doc_ref = db.collection("players").document(player_id)
+
+        pin_entry = pins_dict.get(player_id, {})
+        pin_code = pin_entry.get("pin", "0000")
+        name_field = pin_entry.get("name", fullname)
+
         doc_ref.set({
             "userid": player_id,
             "fullname": fullname,
-            "pin": pin_entry.get("pin", "0000"),
-            "name": pin_entry.get("name", fullname)
+            "birthdate": birthdate,
+            "pin": pin_code,
+            "name": name_field,
         }, merge=True)
         print(f"Player {player_id} salvo no Firebase.")
 
+
 def upload_tournament_to_firebase(tournament_id, my_json):
+    """Cria/atualiza doc de torneio: tournaments/<tournament_id>, rounds e places."""
     if "round" not in my_json:
         return
 
@@ -141,38 +148,48 @@ def upload_tournament_to_firebase(tournament_id, my_json):
     tournaments_ref = db.collection("tournaments").document(tournament_id)
     round_dict = my_json["round"]
 
+    # Salva as rodadas
     for round_number, divisions in round_dict.items():
         for division_key, data_division in divisions.items():
             table_data = data_division.get("table", {})
             round_doc_ref = tournaments_ref.collection("rounds").document(str(round_number))
 
             for table_id, match_info in table_data.items():
-                # Usa o número do outcome já existente, se disponível
                 outcome_num = match_info.get("outcomeNumber", 0)
 
-                # IDs e PINs dos jogadores
                 p1_id = match_info.get("player1_id") or "N/A"
                 p2_id = match_info.get("player2_id") or "N/A"
                 p1_pin = pins_dict.get(p1_id, {}).get('pin', '0000')
                 p2_pin = pins_dict.get(p2_id, {}).get('pin', '0000')
 
-                # Atualiza os dados
                 new_data = dict(match_info)
-                new_data["outcomeNumber"] = outcome_num  # Usa o valor existente
+                new_data["outcomeNumber"] = outcome_num
                 new_data["player1_pin"] = p1_pin
                 new_data["player2_pin"] = p2_pin
 
-                # Salva no Firestore
                 round_doc_ref.collection("matches").document(table_id).set(new_data, merge=True)
                 print(f"Torneio {tournament_id} -> Round {round_number} -> Table {table_id} salvo no Firebase.")
+
+    # Se extraímos "finished_places" no JSON, salvamos em subcoleção "places"
+    if "finished_places" in my_json:
+        places_arr = my_json["finished_places"]
+        places_coll = tournaments_ref.collection("places")
+        for place_info in places_arr:
+            place_doc = places_coll.document(str(place_info["place"]))
+            place_doc.set({
+                "userid": place_info["userid"],
+                "fullname": place_info["fullname"],
+            }, merge=True)
+            print(f"Torneio {tournament_id} -> place {place_info['place']} salvo no Firebase.")
 
 
 # =========== Handler =============
 class TDFHandler(FileSystemEventHandler):
     def __init__(self, directory):
         self.directory = directory
-        self.last_sent_data = None  
-        self.player_data = {}  
+        self.last_sent_data = None
+        # {userid: {fullname, birthdate, ...}}
+        self.player_data = {}
 
     def handle_tdf_event(self, event, action):
         if event.src_path.endswith(".tdf"):
@@ -195,25 +212,49 @@ class TDFHandler(FileSystemEventHandler):
 
             soup = BeautifulSoup(data, 'lxml')
 
-            # Extrai players e guarda em self.player_data
+            # Extrai nome e id do torneio
+            tournament_name = "Torneio_Desconhecido"
+            tournament_id_tag = "000"
+            data_tag = soup.find("data")
+            if data_tag:
+                name_tag = data_tag.find("name")
+                id_tag = data_tag.find("id")
+                if name_tag and name_tag.string:
+                    tournament_name = name_tag.string
+                if id_tag and id_tag.string:
+                    tournament_id_tag = id_tag.string
+
+            tournament_id = f"{tournament_name}_{tournament_id_tag}".replace(" ", "_")
+
+            # Extrai players
             self.player_data = self.extract_players(soup)
-            my_json = {'players': self.player_data}
+            my_json = {
+                "players": self.player_data,
+                "tournamentName": tournament_name,
+                "tournamentID": tournament_id_tag,
+            }
 
-            # Extrai rounds, com base em self.player_data
-            my_json['round'] = self.extract_rounds(soup)
+            # Extrai rounds
+            my_json["round"] = self.extract_rounds(soup)
 
-            # Gera pins
+            # Extrai places (pódio) se existir <standings> + <pod category="2" type="finished">
+            finished_places = self.extract_finished_places(soup)
+            if finished_places:
+                my_json["finished_places"] = finished_places
+
+            # Gera PINs
             pin_file = "player_pins.json"
             player_pins_map = load_pins_file(pin_file)
             pins_dict = {}
-
-            for pid, p_name in my_json['players'].items():
+            for pid, p_info in my_json["players"].items():
                 if pid not in player_pins_map:
                     player_pins_map[pid] = generate_random_pin(4)
-                pins_dict[pid] = {"pin": player_pins_map[pid], "name": p_name}
-
+                pins_dict[pid] = {
+                    "pin": player_pins_map[pid],
+                    "name": p_info.get("fullname", "Jogador X")
+                }
             save_pins_file(pin_file, player_pins_map)
-            my_json['pins'] = pins_dict
+            my_json["pins"] = pins_dict
 
             # Gera PDF
             print_pins_pdf(pins_dict)
@@ -227,11 +268,11 @@ class TDFHandler(FileSystemEventHandler):
                 return
             self.last_sent_data = data_str
 
-            # Envia p/ main_2 via HTTP
+            # Envia p/ main_2
             try:
                 resp = requests.post(f"{ONLINE_SERVER_URL}/update-data", json=my_json)
                 if resp.status_code == 200:
-                    print("Dados enviados para o servidor online com sucesso!")
+                    print("Dados enviados ao servidor online com sucesso!")
                 else:
                     print(f"Falha ao enviar dados. Status: {resp.status_code}, {resp.text}")
             except Exception as e:
@@ -239,94 +280,127 @@ class TDFHandler(FileSystemEventHandler):
 
             # Salva no Firebase
             upload_players_to_firebase(my_json)
-            tournament_id = sanitize_filename_as_id(file_path)
             upload_tournament_to_firebase(tournament_id, my_json)
 
         except Exception as e:
             print(f"Erro ao processar o arquivo: {e}")
 
     def extract_players(self, soup):
-        players_xml = soup.find("players").find_all('player')
+        """
+        <players>
+          <player userid='4176539'>
+            <firstname>Joao</firstname>
+            <lastname>Silva</lastname>
+            <birthdate>08/09/2000</birthdate>
+          </player>
+          ...
+        </players>
+        """
+        players_xml = soup.find("players").find_all("player")
         print(f"Jogadores encontrados: {len(players_xml)}")
         p_data = {}
+
         for p in players_xml:
-            userid = p.get('userid', '0000')
-            firstname = p.find('firstname').string if p.find('firstname') else "Desconhecido"
-            lastname = p.find('lastname').string if p.find('lastname') else "Desconhecido"
-            p_data[userid] = f"{firstname} {lastname}"
+            userid = p.get("userid", "0000")
+            firstname = p.find("firstname").string if p.find("firstname") else "Desconhecido"
+            lastname = p.find("lastname").string if p.find("lastname") else "Desconhecido"
+            birthdate = p.find("birthdate").string if p.find("birthdate") else ""
+
+            p_data[userid] = {
+                "fullname": f"{firstname} {lastname}".strip(),
+                "birthdate": birthdate
+            }
+
         return p_data
 
     def extract_rounds(self, soup):
-        pods = soup.find("pods").find_all('pod')
+        pods_tag = soup.find("pods")
+        if not pods_tag:
+            print("Nenhuma <pods> encontrada.")
+            return {}
+
+        pods = pods_tag.find_all("pod")
         print(f"Divisões encontradas: {len(pods)}")
-
         round_data = {}
-        for pod in pods:
-            div_key = category.get(pod['category'], 'None')
-            rounds_list = pod.find('rounds').find_all('round')
 
+        for pod in pods:
+            div_cat = pod.get("category", "None")
+            div_idx = category.get(div_cat, "None")
+
+            rounds_block = pod.find("rounds")
+            if not rounds_block:
+                continue
+
+            rounds_list = rounds_block.find_all("round")
             for r in rounds_list:
-                round_number = r['number']
+                round_number = r["number"]
                 if round_number not in round_data:
                     round_data[round_number] = {}
-                round_data[round_number][div_key] = self.extract_matches(r)
+                round_data[round_number][div_idx] = self.extract_matches(r)
         return round_data
 
     def extract_matches(self, round_tag):
-        placeholder = {'table': {}}
-        matches = round_tag.find('matches').find_all('match')
+        placeholder = {"table": {}}
+        matches = round_tag.find("matches")
+        if not matches:
+            return placeholder
 
-        for m in matches:
+        all_matches = matches.find_all("match")
+        for m in all_matches:
             table_number = m.find("tablenumber").string if m.find("tablenumber") else "Desconhecido"
             player1_tag = m.find("player1")
             player2_tag = m.find("player2")
 
-            player1_id = player1_tag['userid'] if player1_tag else "N/A"
-            player2_id = player2_tag['userid'] if player2_tag else "N/A"
+            p1_id = player1_tag["userid"] if player1_tag else "N/A"
+            p2_id = player2_tag["userid"] if player2_tag else "N/A"
 
-            # Nomes
-            p1_name = self.player_data.get(player1_id, "N/A")
-            p2_name = self.player_data.get(player2_id, "N/A")
+            p1_data = self.player_data.get(p1_id, {})
+            p2_data = self.player_data.get(p2_id, {})
 
-            result_code = m.get('outcome', "0")  # Default para "0" se não houver outcome
+            p1_name = p1_data.get("fullname", "N/A")
+            p2_name = p2_data.get("fullname", "N/A")
 
-            # Lógica para outcome "Vitória de Fulano"
-            if result_code == "5":
+            outcome_code = m.get("outcome", "0")
+            if outcome_code == "5":
                 single_tag = m.find("player")
-                single_id = single_tag['userid'] if single_tag else "N/A"
-                single_name = self.player_data.get(single_id, "N/A")
-                placeholder['table'][table_number] = {
+                single_id = single_tag["userid"] if single_tag else "N/A"
+                single_data = self.player_data.get(single_id, {})
+                single_name = single_data.get("fullname", "N/A")
+
+                placeholder["table"][table_number] = {
                     "player1_id": single_id,
                     "player2_id": None,
                     "player1": single_name,
                     "player2": "N/A",
                     "outcome": "Vitória Automática (BYE)",
-                    "outcomeNumber": 5  # Adiciona o número diretamente
+                    "outcomeNumber": 5,
                 }
             else:
-                # Determina o número e a descrição do resultado
-                outcome_num, outcome_str = self.determine_outcome(result_code, player1_id, player2_id)
-                placeholder['table'][table_number] = {
-                    "player1_id": player1_id,
-                    "player2_id": player2_id,
+                outcome_num, outcome_str = self.determine_outcome(outcome_code, p1_id, p2_id)
+                placeholder["table"][table_number] = {
+                    "player1_id": p1_id,
+                    "player2_id": p2_id,
                     "player1": p1_name,
                     "player2": p2_name,
                     "outcome": outcome_str,
-                    "outcomeNumber": outcome_num  # Adiciona o número diretamente
+                    "outcomeNumber": outcome_num,
                 }
-
         return placeholder
-    
-    def determine_outcome(self, result_code, player1_id, player2_id):
-        """Determina o número e a descrição do resultado."""
+
+    def determine_outcome(self, result_code, p1_id, p2_id):
         outcome_num = 0
-        
+        p1_data = self.player_data.get(p1_id, {})
+        p2_data = self.player_data.get(p2_id, {})
+
+        p1_name = p1_data.get("fullname", "Jogador 1")
+        p2_name = p2_data.get("fullname", "Jogador 2")
+
         if result_code == "1":
             outcome_num = 1
-            outcome_str = f"Vitória de {self.player_data.get(player1_id, 'Jogador 1')}"
+            outcome_str = f"Vitória de {p1_name}"
         elif result_code == "2":
             outcome_num = 2
-            outcome_str = f"Vitória de {self.player_data.get(player2_id, 'Jogador 2')}"
+            outcome_str = f"Vitória de {p2_name}"
         elif result_code == "3":
             outcome_num = 3
             outcome_str = "Empate"
@@ -344,6 +418,51 @@ class TDFHandler(FileSystemEventHandler):
 
         return outcome_num, outcome_str
 
+    def extract_finished_places(self, soup):
+        """
+        Exemplo esperado no .tdf:
+        <standings>
+          <pod category="2" type="finished">
+            <player id="4176539" place="1" />
+            <player id="5054993" place="2" />
+            ...
+          </pod>
+        </standings>
+        """
+        results = []
+        standings_tag = soup.find("standings")
+        if not standings_tag:
+            print("Nenhum <standings> encontrado no XML.")
+            return results
+
+        # Filtra pods "type=finished" e "category=2"
+        pods = standings_tag.find_all("pod", {"type": "finished", "category": "2"})
+        if not pods:
+            print("Nenhum pod com category=2 e type=finished dentro de <standings>.")
+            return results
+
+        for pod in pods:
+            # Para cada <player id="X" place="Y" />
+            players = pod.find_all("player")
+            for pl in players:
+                pid = pl.get("id", "N/A")
+                place_str = pl.get("place", "0")
+                try:
+                    place_int = int(place_str)
+                except:
+                    place_int = 0
+
+                p_data = self.player_data.get(pid, {})
+                fullname = p_data.get("fullname", "Desconhecido")
+
+                results.append({
+                    "userid": pid,
+                    "place": place_int,
+                    "fullname": fullname,
+                })
+
+        print("Places extraídos:", results)
+        return results
 
 
 def iniciar_monitoramento(diretorio):
@@ -359,8 +478,9 @@ def iniciar_monitoramento(diretorio):
         observer.stop()
     observer.join()
 
+
 if __name__ == "__main__":
-    base_url = "https://yourserver.pythonanywhere.com"
+    base_url = "https://DuPrado.pythonanywhere.com"
     num_mesas = 25
     generate_qr_codes(base_url, num_mesas)
 
@@ -369,11 +489,12 @@ if __name__ == "__main__":
         print("Diretório inválido. Encerrando.")
         exit()
 
-    tdf_files = [f for f in os.listdir(tom_data_directory) if f.endswith('.tdf')]
-    print(f"Arquivos .tdf encontrados no diretório: {tdf_files}")
+    files = [f for f in os.listdir(tom_data_directory) if f.endswith('.tdf')]
+    print(f"Arquivos .tdf encontrados no diretório: {files}")
 
-    # Sobe Flask e inicia monitoramento
+    # Inicia Flask em thread
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
 
+    # Inicia watchdog
     iniciar_monitoramento(tom_data_directory)

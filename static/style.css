@@ -3,9 +3,9 @@
 body {
   margin: 0;
   font-family: "Roboto", Arial, sans-serif;
-  /* Gradiente de fundo: substitua as cores por algo mais "Pokémon" se quiser */
-  background: linear-gradient(135deg, #1b1b2f 0%, #2b2b44 100%);
-  color: #fff;
+  /* Gradiente de fundo atualizado para refletir o tema do app */
+  background: linear-gradient(135deg, #1e1e1e 0%, #4d4d4d 100%);
+  color: #ffffff;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -14,10 +14,10 @@ body {
 }
 
 /* ====== HEADER E FOOTER ====== */
-/* Cabeçalho e Rodapé com cor de fundo escuro e texto em rosa */
+/* Cabeçalho e Rodapé com cor de fundo escuro e texto em vermelho */
 header,
 footer {
-  background: #0f0f1f;
+  background: #1e1e1e; /* Atualizado para o tema */
   text-align: center;
   padding: 10px;
   position: relative;
@@ -27,7 +27,7 @@ footer {
 header h1,
 footer p {
   margin: 0;
-  color: #f72585;
+  color: #e3350d; /* Atualizado para o tema */
   font-weight: bold;
   animation: glow 2s infinite alternate ease-in-out;
   text-transform: uppercase;
@@ -37,10 +37,10 @@ footer p {
 /* Animação do glow no texto do header/footer */
 @keyframes glow {
   0% {
-    text-shadow: 0 0 5px #f72585;
+    text-shadow: 0 0 5px #e3350d; /* Atualizado para o tema */
   }
   100% {
-    text-shadow: 0 0 20px #f72585;
+    text-shadow: 0 0 20px #e3350d; /* Atualizado para o tema */
   }
 }
 
@@ -74,7 +74,7 @@ main {
 
 /* Textos dentro de center-content, exemplificando. */
 .center-content p {
-  color: #fff;
+  color: #ffffff; /* Atualizado para o tema */
   font-size: 1.5em;
   margin-bottom: 20px;
 }
@@ -89,11 +89,11 @@ main {
   gap: 20px;
 }
 
-/* Botões com bordas arredondadas, cores suaves, e efeitos de hover */
+/* Botões com bordas arredondadas, cores consistentes e efeitos de hover */
 button,
 .button {
-  background: #4cc9f0;
-  color: #000;
+  background: #e3350d; /* Atualizado para o tema */
+  color: #ffffff; /* Atualizado para o tema */
   font-size: 1.2em;
   padding: 10px 25px;
   border: none;
@@ -105,18 +105,18 @@ button,
 
 button:hover,
 .button:hover {
-  background: #4895ef;
+  background: #ff6f61; /* Atualizado para o tema */
   transform: scale(1.05);
 }
 
 /* Botão vermelho para ações destrutivas ou de destaque */
 .button.red {
-  background: #f72585;
-  color: #fff;
+  background: #e3350d; /* Atualizado para o tema */
+  color: #ffffff; /* Atualizado para o tema */
 }
 
 .button.red:hover {
-  background: #d81f6e;
+  background: #ff6f61; /* Atualizado para o tema */
 }
 
 /* ====== HIDDEN CLASSES ====== */
@@ -159,7 +159,7 @@ button:hover,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #161627;
+  background: #1e1e1e; /* Atualizado para o tema */
   padding: 10px 20px;
   margin-bottom: 20px;
   width: 100%;
@@ -180,13 +180,13 @@ button:hover,
 .info-container span {
   font-size: 1em;
   font-weight: bold;
-  color: #b5179e;
+  color: #e3350d; /* Atualizado para o tema */
 }
 
 /* Timer com fonte maior */
 .timer-container {
   font-size: 1.5em;
-  color: #4cc9f0;
+  color: #ff6f61; /* Atualizado para o tema */
   display: flex;
   align-items: center;
 }
@@ -194,13 +194,13 @@ button:hover,
 .timer-container span:first-child {
   margin-right: 10px;
   font-size: 0.9em;
-  color: #fff;
+  color: #ffffff; /* Atualizado para o tema */
   font-weight: normal;
 }
 
 #countdown-timer {
   font-weight: bold;
-  color: #4cc9f0;
+  color: #ff6f61; /* Atualizado para o tema */
 }
 
 /* Contêiner das mesas iniciais e das mesas em jogo */
@@ -225,8 +225,8 @@ button:hover,
 /* ====== TABLE CARD ====== */
 /* Card individual de cada mesa */
 .table-card {
-  background: rgba(40, 40, 78, 0.8);
-  border: 2px solid #f72585;
+  background: rgba(30, 30, 30, 0.8); /* Atualizado para o tema */
+  border: 2px solid #e3350d; /* Atualizado para o tema */
   padding: 15px;
   border-radius: 5px;
   text-align: center;
@@ -241,15 +241,15 @@ button:hover,
 /* Efeito de hover */
 .table-card:hover {
   transform: scale(1);
-  box-shadow: 0 0 20px #f72585;
+  box-shadow: 0 0 20px #e3350d; /* Atualizado para o tema */
 }
 
 /* Título da mesa */
 .table-card h2 {
   margin: 0 0 10px 0;
   font-size: 1.4em;
-  color: #f72585;
-  text-shadow: 0 0 5px #f72585;
+  color: #e3350d; /* Atualizado para o tema */
+  text-shadow: 0 0 5px #e3350d; /* Atualizado para o tema */
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -258,14 +258,14 @@ button:hover,
 .table-card .players {
   font-size: 1.1em;
   margin-bottom: 10px;
-  color: #fff;
+  color: #ffffff; /* Atualizado para o tema */
   font-weight: 500;
 }
 
 /* Status do jogo: Jogando, Vitória, etc */
 .table-card .status {
   font-size: 1em;
-  color: #fff;
+  color: #ffffff; /* Atualizado para o tema */
   margin-bottom: 5px;
   font-weight: bold;
 }
@@ -273,7 +273,7 @@ button:hover,
 /* Tempo decorrido */
 .elapsed-time {
   font-size: 0.9em;
-  color: #fff;
+  color: #ffffff; /* Atualizado para o tema */
   margin-top: 5px;
   font-style: italic;
 }
@@ -282,18 +282,18 @@ button:hover,
 /* Título de "3 Turnos" com animação de glow */
 .turnos-title {
   font-size: 2em;
-  color: #4cc9f0;
+  color: #ff6f61; /* Atualizado para o tema */
   margin-bottom: 20px;
   text-align: center;
   animation: glow 2s infinite alternate;
   text-transform: uppercase;
 }
 
-/* Round Info e Players Info (texto roxo) */
+/* Round Info e Players Info (texto vermelho) */
 .round-info,
 .players-info {
   font-size: 1.2em;
-  color: #b5179e;
+  color: #e3350d; /* Atualizado para o tema */
   font-weight: bold;
   text-transform: uppercase;
 }
@@ -312,7 +312,7 @@ button:hover,
 #scoreboard-section h2 {
   text-align: center;
   font-size: 1.8em;
-  color: #4cc9f0;
+  color: #ff6f61; /* Atualizado para o tema */
   margin-bottom: 20px;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -324,7 +324,7 @@ button:hover,
   width: 100%;
   border-collapse: collapse;
   background: rgba(0, 0, 0, 0.7);
-  color: #fff;
+  color: #ffffff; /* Atualizado para o tema */
   font-size: 1em;
   border-radius: 5px;
   overflow: hidden;
@@ -332,7 +332,7 @@ button:hover,
 }
 
 #scoreboard thead {
-  background: #161627;
+  background: #1e1e1e; /* Atualizado para o tema */
 }
 
 #scoreboard th,
@@ -345,12 +345,12 @@ button:hover,
 }
 
 #scoreboard th {
-  color: #f72585;
+  color: #e3350d; /* Atualizado para o tema */
   font-weight: bold;
   text-transform: uppercase;
   font-size: 0.9em;
   letter-spacing: 1px;
-  border-bottom: 2px solid #4cc9f0;
+  border-bottom: 2px solid #ff6f61; /* Atualizado para o tema */
 }
 
 #scoreboard tbody tr {
@@ -383,7 +383,7 @@ button:hover,
 /* Título da página Mesa */
 .mesa-container h1 {
   font-size: 2em;
-  color: #f72585;
+  color: #e3350d; /* Atualizado para o tema */
   text-transform: uppercase;
   margin-bottom: 30px;
   letter-spacing: 1px;
@@ -400,7 +400,7 @@ button:hover,
 .mesa-container .resultado-container {
   margin-top: 20px;
   font-size: 1.2em;
-  color: #4caf50;
+  color: #4caf50; /* Mantido, pois indica sucesso */
   font-weight: bold;
 }
 
@@ -418,23 +418,23 @@ button:hover,
   font-size: 1.2em;
   text-align: center;
   width: 200px;
-  border: 2px solid #4cc9f0;
+  border: 2px solid #ff6f61; /* Atualizado para o tema */
   border-radius: 5px;
-  background-color: #000;
-  color: #fff;
+  background-color: #1e1e1e; /* Atualizado para o tema */
+  color: #ffffff; /* Atualizado para o tema */
   margin-bottom: 15px;
 }
 
 #pin-input:focus {
   outline: none;
-  border-color: #4895ef;
-  box-shadow: 0 0 10px #4895ef;
+  border-color: #e3350d; /* Atualizado para o tema */
+  box-shadow: 0 0 10px #e3350d; /* Atualizado para o tema */
 }
 
 /* Label acima do PIN */
 #pin-label {
   font-size: 1.2em;
-  color: #4cc9f0;
+  color: #ff6f61; /* Atualizado para o tema */
   margin-bottom: 10px;
 }
 
@@ -448,21 +448,21 @@ table {
 }
 
 table thead {
-  background: #161627;
+  background: #1e1e1e; /* Atualizado para o tema */
 }
 
 table th {
-  color: #f72585;
+  color: #e3350d; /* Atualizado para o tema */
   font-weight: bold;
   text-transform: uppercase;
   font-size: 0.9em;
-  border-bottom: 2px solid #4cc9f0;
+  border-bottom: 2px solid #ff6f61; /* Atualizado para o tema */
   padding: 8px;
 }
 
 table td {
   padding: 8px;
-  color: #fff;
+  color: #ffffff; /* Atualizado para o tema */
   font-family: "Roboto Mono", monospace;
   text-align: center;
 }
