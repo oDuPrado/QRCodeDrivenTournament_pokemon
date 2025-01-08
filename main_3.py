@@ -10,7 +10,7 @@ import subprocess
 class RaspberryPiConnection:
     def __init__(self):
         # Constantes privadas (encapsulamento)
-        self.__hostname = "raspberrypi.local"  # Substitua pelo IP ou hostname
+        self.__hostname = "100.80.36.66"  # Substitua pelo IP do Tailscale
         self.__username = "duprado"  # Nome de usuário do Raspberry Pi
         self.__password = "110300"  # Substitua pela senha do Raspberry Pi
         self.__remote_directory = "/home/duprado/main/files/"  # Diretório remoto no Raspberry Pi
