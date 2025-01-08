@@ -10,11 +10,11 @@ import subprocess
 class RaspberryPiConnection:
     def __init__(self):
         # Constantes privadas (encapsulamento)
-        self.__hostname = "100.80.36.66"  # Substitua pelo IP do Tailscale
-        self.__username = "duprado"  # Nome de usuário do Raspberry Pi
-        self.__password = "110300"  # Substitua pela senha do Raspberry Pi
-        self.__remote_directory = "/home/duprado/main/files/"  # Diretório remoto no Raspberry Pi
-        self.__start_script_path = "/home/duprado/main/codigo/web_server/CODIGO_WEB_server/start_main.sh"  # Caminho do script de inicialização no Raspberry Pi
+        self.__hostname = "yourhostname"  # Substitua pelo IP do Tailscale
+        self.__username = "yourusername"  # Nome de usuário do Raspberry Pi
+        self.__password = "yourpassword"  # Substitua pela senha do Raspberry Pi
+        self.__remote_directory = "your remote dicrectory"  # Diretório remoto no Raspberry Pi
+        self.__start_script_path = "your start scprit"  # Caminho do script de inicialização no Raspberry Pi
 
     def __print_details(self):
         """Exibe detalhes da conexão."""
@@ -193,7 +193,7 @@ def iniciar_script_remoto(connection):
 
 def iniciar_monitoramento(connection):
     """Inicia o monitoramento do diretório local."""
-    local_directory = r"C:\Users\Marco Prado\OneDrive\ONE DRIVE\OneDrive\SISTEMAS\2024\LIGAS\TOM_APP\DATA\TOM_DATA\TOM_DATA"
+    local_directory = r"your file system"
     if os.path.exists(local_directory):
         try:
             monitorar_pasta(local_directory, connection)
