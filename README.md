@@ -4,10 +4,39 @@
 
 # **Tournament Manager**
 
-Tournament Manager is a live tournament management system designed to facilitate reporting and tracking results in real-time. Using Flask for the backend and a dynamic frontend, it integrates QR codes for seamless table identification and offers a responsive design suitable for any device.
+Tournament Manager is a complete real-time tournament management system, designed to facilitate the monitoring and recording of results in a dynamic and efficient way. The system is designed to be responsive and accessible on any device, from desktops to smartphones.
+The system updates along with TOM, showing real-time player information, and recording it in a Firestore database for stat analysis and integration with other systems.
 
 ---
+## **Key Features**
 
+1. Table and Match Management:
+A) Creation and management of tournaments with support for different formats (round-robin, single elimination, etc.).
+B) Real-time monitoring of match results.
+
+2. QR Code for Table Identification:
+A) Automatic generation of QR Codes for each gaming table.
+B) Integration of QR Codes to facilitate the registration of matches directly by players or referees.
+
+3. Responsive Web Platform:
+A) Modern and intuitive interface, fully responsive to work on any device, including desktops, tablets and smartphones.
+
+4. Admin Panel:
+A) Tools for organizers to easily set up and manage tournaments, players, and tables.
+
+5. Real-Time Updates:
+A) Instant updates for players and admins via FFTP (with Flask).
+
+6. Tournament History and Reports:
+A) Detailed record of all tournaments held, allowing subsequent analysis.
+
+B) Option to export reports in formats such as CSV or PDF.
+
+7) Security and Authentication:
+A) Robust authentication system using JWT (JSON Web Tokens).
+B) Control of permissions for organizers, referees and players.
+
+--- 
 ## **Features**
 
 1 -Configure the directory containing the tournament's .tdf files.<br>
